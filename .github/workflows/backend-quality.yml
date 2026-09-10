@@ -1,0 +1,66 @@
+name: Backend Quality
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+
+permissions:
+  contents: read
+
+jobs:
+  backend-quality:
+    name: backend-quality
+    if: ${{ github.event.pull_request.draft == false }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Detect backend changes
+        id: changes
+        run: |
+          if git diff --quiet "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}" -- backend; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No backend changes detected."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "Backend changes detected."
+          fi
+
+      - name: Skip backend quality checks
+        if: steps.changes.outputs.changed == 'false'
+        run: echo "No backend changes; backend quality checks skipped."
+
+      - name: Setup Node.js
+        if: steps.changes.outputs.changed == 'true'
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Setup pnpm
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.5.1 --activate
+
+      - name: Install backend dependencies
+        if: steps.changes.outputs.changed == 'true'
+        working-directory: backend
+        run: pnpm install --frozen-lockfile
+
+      - name: Check ESLint with zero warnings
+        if: steps.changes.outputs.changed == 'true'
+        working-directory: backend
+        run: pnpm lint:ci
+
+      - name: Check Prettier
+        if: steps.changes.outputs.changed == 'true'
+        working-directory: backend
+        run: pnpm format:check

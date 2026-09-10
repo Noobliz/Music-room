@@ -40,6 +40,8 @@ Supprimer les dépendances/builds backend et les assets Docker Supabase :
 make fclean
 ```
 
+La CI GitHub Actions vérifie ESLint sans warning et Prettier sur les pull requests non draft. Elle passe immédiatement si aucun fichier `backend/` n'a changé. La protection de branche déclarative est dans `.github/settings.yml` et requiert le check `backend-quality` avant merge via l'app Probot Settings.
+
 Commandes manuelles équivalentes :
 
 ```bash
