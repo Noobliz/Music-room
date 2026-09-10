@@ -1,4 +1,4 @@
-package com.example.music_room.ui.theme
+package com.example.musicroom.ui.theme
 
 import androidx.compose.ui.graphics.Color
 

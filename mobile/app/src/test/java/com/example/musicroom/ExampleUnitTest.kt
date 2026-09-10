@@ -1,4 +1,4 @@
-package com.example.music_room
+package com.example.musicroom
 
 import org.junit.Test
 

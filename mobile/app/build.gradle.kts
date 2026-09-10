@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.music_room"
+    namespace = "com.example.musicroom"
     compileSdk {
         version = release(37)
     }
