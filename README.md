@@ -2,47 +2,47 @@
 
 ## Backend
 
-Copier la configuration locale :
+Copy the local environment file:
 
 ```bash
 cp .env.example .env
 ```
 
-Lancer le backend complet depuis la racine :
+Start the full backend from the repository root:
 
 ```bash
 make backend setup
 ```
 
-Cette commande installe les dépendances, synchronise la configuration locale, démarre Supabase, puis lance l'API Fastify dans le même terminal.
+This command installs dependencies, syncs the local configuration, starts Supabase, then runs the Fastify API in the same terminal.
 
-Relancer sans refaire le setup :
+Restart without running the setup again:
 
 ```bash
 make backend start
 ```
 
-Arrêter le backend complet :
+Stop the full backend:
 
 ```bash
 make backend stop
 ```
 
-Réinitialiser Supabase et relancer l'API :
+Reset Supabase and restart the API:
 
 ```bash
 make backend reset
 ```
 
-Supprimer les dépendances/builds backend et les assets Docker Supabase :
+Remove backend dependencies/build artifacts and Supabase Docker assets:
 
 ```bash
 make fclean
 ```
 
-La CI GitHub Actions vérifie ESLint sans warning et Prettier sur les pull requests non draft. Elle passe immédiatement si aucun fichier `backend/` n'a changé. La protection de branche déclarative est dans `.github/settings.yml` et requiert le check `backend-quality` avant merge via l'app Probot Settings.
+The GitHub Actions CI checks ESLint with zero warnings and Prettier on non-draft pull requests. It exits successfully right away when no `backend/` files changed. Declarative branch protection lives in `.github/settings.yml` and requires the `backend-quality` check before merge through the Probot Settings app.
 
-Commandes manuelles équivalentes :
+Equivalent manual commands:
 
 ```bash
 cd backend
@@ -51,13 +51,13 @@ pnpm db:start
 pnpm dev
 ```
 
-Vérifier l'API :
+Check the API:
 
 ```bash
 curl http://localhost:3000/health
 ```
 
-Réponse attendue :
+Expected response:
 
 ```json
 {
@@ -65,4 +65,4 @@ Réponse attendue :
 }
 ```
 
-Les ports modifiables sont déclarés dans `.env` à la racine du dépôt. La commande `pnpm db:start` les recopie dans la configuration Supabase et Bruno, car ces outils lisent leurs propres fichiers.
+Configurable ports are declared in `.env` at the repository root. The `pnpm db:start` command copies them into the Supabase and Bruno configuration files because those tools read their own files.
