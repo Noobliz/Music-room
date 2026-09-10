@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "Music Room API",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}
