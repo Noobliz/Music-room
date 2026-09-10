@@ -8,6 +8,10 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check",
     "sync-local-config": "sh scripts/sync-supabase-config.sh",
     "db:start": "pnpm sync-local-config && supabase start",
     "db:stop": "supabase stop",
@@ -23,10 +27,15 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@eslint/js": "^9.37.0",
     "@types/node": "^22.10.2",
     "drizzle-kit": "^0.30.2",
+    "eslint": "^9.37.0",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.6.2",
     "supabase": "^2.39.2",
     "tsx": "^4.19.2",
+    "typescript-eslint": "^8.46.1",
     "typescript": "^5.7.2"
   }
 }
