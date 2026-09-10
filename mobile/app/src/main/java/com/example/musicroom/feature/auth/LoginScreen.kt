@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -26,9 +27,13 @@ import java.security.Key
 @Composable
 fun LoginScreen(
     modifier: Modifier = Modifier,
-    onLoginClick: (String, String) -> Unit) {
+    onLoginClick: (String, String) -> Unit,
+    errorMessage: String?
+
+    ) {
     var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("")}
+    var password by remember { mutableStateOf("") }
+
     Column(
         modifier = Modifier.fillMaxSize().padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -61,6 +66,11 @@ fun LoginScreen(
         Spacer(
             modifier = Modifier.height(24.dp)
         )
+        if (errorMessage != null)
+            Text(
+                text=errorMessage,
+                color = MaterialTheme.colorScheme.error
+            )
         Button(
             onClick = { onLoginClick(email, password) }
         ) {

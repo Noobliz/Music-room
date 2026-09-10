@@ -13,6 +13,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -26,16 +27,17 @@ class MainActivity : ComponentActivity() {
         setContent {
             MusicroomTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-
                     LoginScreen(
                         modifier = Modifier.padding(innerPadding),
                         onLoginClick = { inputEmail, inputPassword ->
-                            if (inputEmail == "test@test.com" && inputPassword == "azerty")
+                            if (inputEmail == "test@test.com" && inputPassword == "azerty") {
                                 println("Connexion reussie")
+                                errorMessage = null}
                             else {
-                                println("Mauvais identifiants")
+                                errorMessage = "Mauvais identifiants"
                             }
-                        }
+                        },
+                        errorMessage
                     )
 
                 }
