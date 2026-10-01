@@ -1,11 +1,16 @@
 SHELL := /bin/sh
 
 .DEFAULT_GOAL := help
-.PHONY: help banner backend setup start stop reset fclean ensure-env
+.PHONY: help banner install backend mobile clean fclean re \
+        backend-setup backend-start backend-stop backend-reset backend-test \
+        mobile-start mobile-stop mobile-reset \
+        env-sync doc ensure-env
 .SILENT:
 
 BACKEND_DIR := backend
+MOBILE_DIR := mobile
 PROJECT_NAME := music-room
+MOBILE_APP_ID := com.example.music_room
 ENV_FILE := .env
 
 define run
@@ -34,13 +39,30 @@ define run
 	fi
 endef
 
+# ---------------------------------------------------------------------------
+# Top-level targets
+# ---------------------------------------------------------------------------
+
 help: banner
 	printf "\n"
-	printf "  make backend setup   Install, start Supabase, then run the API\n"
-	printf "  make backend start   Start Supabase and the API without installing\n"
-	printf "  make backend stop    Stop the API process and Supabase\n"
-	printf "  make backend reset   Reset Supabase, then run the API\n"
-	printf "  make fclean          Remove backend deps/build and Supabase Docker assets\n"
+	printf "  make install            Install all dependencies (backend + mobile)\n"
+	printf "  make backend            Install, start Supabase, then run the API\n"
+	printf "  make mobile             Build the mobile app (debug APK)\n"
+	printf "  make clean              Remove build artifacts (keeps dependencies)\n"
+	printf "  make fclean             Remove everything (deps, builds, Docker assets)\n"
+	printf "  make re                 Full clean then reinstall and start backend\n"
+	printf "\n"
+	printf "  make backend start      Start Supabase and the API without installing\n"
+	printf "  make backend stop       Stop the API process and Supabase\n"
+	printf "  make backend reset      Reset Supabase, then run the API\n"
+	printf "  make backend test       Run the database tests (pgTAP)\n"
+	printf "\n"
+	printf "  make mobile start       Install and launch on a connected device/emulator\n"
+	printf "  make mobile stop        Stop the app on the device\n"
+	printf "  make mobile reset       Clean, rebuild, and launch on device\n"
+	printf "\n"
+	printf "  make env sync           Sync .env into Supabase and Bruno configs\n"
+	printf "  make doc                Open the API documentation (Swagger UI)\n"
 	printf "\n"
 
 banner:
@@ -52,27 +74,31 @@ banner:
 	printf " |_|  |_|\\__,_|___/_|\\___| |_| \\_\\___/ \\___/|_| |_| |_|\n"
 	printf "\n"
 
+install: ensure-env
+	$(call run,Installing backend dependencies,cd "$(BACKEND_DIR)" && pnpm install)
+	$(call run,Downloading mobile dependencies,cd "$(MOBILE_DIR)" && ./gradlew dependencies --quiet)
+
 backend: banner
 
-setup: ensure-env
+backend-setup: ensure-env
 	$(call run,Installing backend dependencies,cd "$(BACKEND_DIR)" && pnpm install)
 	$(call run,Syncing local config,cd "$(BACKEND_DIR)" && pnpm sync-local-config)
 	$(call run,Starting local Supabase,cd "$(BACKEND_DIR)" && pnpm db:start)
 	printf "\n  [ API ] Starting Fastify in this terminal\n\n"
 	cd "$(BACKEND_DIR)" && pnpm dev
 
-start: ensure-env
+backend-start: ensure-env
 	$(call run,Syncing local config,cd "$(BACKEND_DIR)" && pnpm sync-local-config)
 	$(call run,Starting local Supabase,cd "$(BACKEND_DIR)" && pnpm db:start)
 	printf "\n  [ API ] Starting Fastify in this terminal\n\n"
 	cd "$(BACKEND_DIR)" && pnpm dev
 
-stop:
+backend-stop:
 	$(call run,Stopping API process on API_PORT,sh "$(BACKEND_DIR)/scripts/stop-api.sh")
 	$(call run,Stopping local Supabase,cd "$(BACKEND_DIR)" && pnpm db:stop || true)
 
-reset: ensure-env
-	$(MAKE) --no-print-directory stop
+backend-reset: ensure-env
+	$(MAKE) --no-print-directory backend-stop
 	$(call run,Installing backend dependencies,cd "$(BACKEND_DIR)" && pnpm install)
 	$(call run,Syncing local config,cd "$(BACKEND_DIR)" && pnpm sync-local-config)
 	$(call run,Starting local Supabase,cd "$(BACKEND_DIR)" && pnpm db:start)
@@ -80,12 +106,62 @@ reset: ensure-env
 	printf "\n  [ API ] Starting Fastify in this terminal\n\n"
 	cd "$(BACKEND_DIR)" && pnpm dev
 
+backend-test: ensure-env
+	$(call run,Syncing local config,cd "$(BACKEND_DIR)" && pnpm sync-local-config)
+	$(call run,Starting local Supabase,cd "$(BACKEND_DIR)" && pnpm db:start)
+	printf "\n  [ TEST ] Running database tests\n\n"
+	cd "$(BACKEND_DIR)" && pnpm db:test
+
+setup: backend-setup
+start: backend-start
+stop: backend-stop
+reset: backend-reset
+test: backend-test
+
+mobile: banner
+
+mobile-build:
+	$(call run,Building mobile debug APK,cd "$(MOBILE_DIR)" && ./gradlew assembleDebug)
+
+mobile-start:
+	$(call run,Building and installing on device,cd "$(MOBILE_DIR)" && ./gradlew installDebug)
+	printf "\n  [ APP ] Launching on device\n\n"
+	adb shell am start -n "$(MOBILE_APP_ID)/.MainActivity"
+
+mobile-stop:
+	$(call run,Stopping app on device,adb shell am force-stop "$(MOBILE_APP_ID)")
+
+mobile-reset:
+	$(call run,Cleaning mobile build,cd "$(MOBILE_DIR)" && ./gradlew clean)
+	$(call run,Rebuilding and installing on device,cd "$(MOBILE_DIR)" && ./gradlew installDebug)
+	printf "\n  [ APP ] Launching on device\n\n"
+	adb shell am start -n "$(MOBILE_APP_ID)/.MainActivity"
+
+env: banner
+
+env-sync: ensure-env
+	$(call run,Syncing local config,cd "$(BACKEND_DIR)" && pnpm sync-local-config)
+
+doc:
+	printf "  [ DOC ] Opening Swagger UI at http://localhost:%s/docs\n\n" "$$(grep -m1 '^API_PORT=' "$(ENV_FILE)" 2>/dev/null | cut -d= -f2 || echo 3000)"
+	open "http://localhost:$$(grep -m1 '^API_PORT=' "$(ENV_FILE)" 2>/dev/null | cut -d= -f2 || echo 3000)/docs"
+
+clean:
+	$(call run,Removing backend build artifacts,rm -rf "$(BACKEND_DIR)/dist" "$(BACKEND_DIR)/.turbo")
+	$(call run,Cleaning mobile build,cd "$(MOBILE_DIR)" && ./gradlew clean)
+
 fclean:
-	$(call run,Stopping backend services,$(MAKE) --no-print-directory stop)
+	$(call run,Stopping backend services,$(MAKE) --no-print-directory backend-stop)
 	$(call run,Removing Supabase containers,docker rm -f $$(docker ps -aq --filter "name=$(PROJECT_NAME)") 2>/dev/null || true)
 	$(call run,Removing Supabase volumes,docker volume rm $$(docker volume ls -q --filter "name=$(PROJECT_NAME)") 2>/dev/null || true)
 	$(call run,Removing Supabase images,docker rmi -f $$(docker images --format '{{.Repository}}:{{.Tag}} {{.ID}}' | awk '/supabase/ {print $$2}' | sort -u) 2>/dev/null || true)
 	$(call run,Removing backend install and build artifacts,rm -rf "$(BACKEND_DIR)/node_modules" "$(BACKEND_DIR)/dist" "$(BACKEND_DIR)/.turbo")
+	$(call run,Cleaning mobile build,cd "$(MOBILE_DIR)" && ./gradlew clean)
+	$(call run,Removing Gradle caches,rm -rf "$(MOBILE_DIR)/.gradle" "$(MOBILE_DIR)/app/build")
+
+re: fclean
+	$(MAKE) --no-print-directory install
+	$(MAKE) --no-print-directory backend-setup
 
 ensure-env:
 	if [ ! -f "$(ENV_FILE)" ]; then \

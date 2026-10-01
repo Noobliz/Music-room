@@ -19,12 +19,16 @@
     "db:stop": "supabase stop",
     "db:status": "supabase status",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate"
+    "db:migrate": "drizzle-kit migrate",
+    "db:test": "supabase test db"
   },
   "dependencies": {
+    "@fastify/swagger": "^9.8.1",
+    "@fastify/swagger-ui": "^6.1.1",
     "dotenv": "^16.4.7",
     "drizzle-orm": "^0.38.4",
     "fastify": "^5.2.1",
+    "fastify-type-provider-zod": "^4.0.2",
     "postgres": "^3.4.5",
     "zod": "^3.24.1"
   },
@@ -37,7 +41,7 @@
     "prettier": "^3.6.2",
     "supabase": "^2.39.2",
     "tsx": "^4.19.2",
-    "typescript-eslint": "^8.46.1",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.46.1"
   }
 }
