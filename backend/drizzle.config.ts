@@ -9,7 +9,9 @@ if (!process.env.DATABASE_URL) {
 }
 
 export default defineConfig({
-  schema: './src/db/schema.ts',
+  // Folder, not the ./src/db/schema.ts barrel: drizzle-kit loads files as CommonJS
+  // and cannot resolve the `.js` extension imports required by NodeNext
+  schema: './src/db/schema',
   out: './supabase/migrations',
   dialect: 'postgresql',
   dbCredentials: {
