@@ -8,6 +8,7 @@ branches:
         strict: true
         contexts:
           - backend-quality
+          - backend-db-tests
       enforce_admins: false
       required_pull_request_reviews: null
       restrictions: null
