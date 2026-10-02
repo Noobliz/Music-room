@@ -1,0 +1,84 @@
+name: Backend API Tests
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+
+permissions:
+  contents: read
+
+jobs:
+  backend-api-tests:
+    name: backend-api-tests
+    if: ${{ github.event.pull_request.draft == false }}
+    runs-on: ubuntu-latest
+
+    env:
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: 54322
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      DATABASE_URL: postgres://postgres:postgres@127.0.0.1:54322/postgres
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Detect backend changes
+        id: changes
+        run: |
+          if git diff --quiet "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}" -- backend; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No backend changes detected."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "Backend changes detected."
+          fi
+
+      - name: Skip backend API tests
+        if: steps.changes.outputs.changed == 'false'
+        run: echo "No backend changes; backend API tests skipped."
+
+      - name: Setup Node.js
+        if: steps.changes.outputs.changed == 'true'
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Setup pnpm
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.5.1 --activate
+
+      - name: Install backend dependencies
+        if: steps.changes.outputs.changed == 'true'
+        working-directory: backend
+        run: pnpm install --frozen-lockfile
+
+      - name: Start local Supabase (database, auth and gateway only)
+        if: steps.changes.outputs.changed == 'true'
+        working-directory: backend
+        run: >
+          pnpm exec supabase start
+          -x realtime,storage-api,imgproxy,mailpit,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+
+      - name: Export Supabase API settings
+        if: steps.changes.outputs.changed == 'true'
+        working-directory: backend
+        run: |
+          eval "$(pnpm exec supabase status -o env | grep -E '^(API_URL|PUBLISHABLE_KEY)=')"
+          echo "SUPABASE_URL=$API_URL" >> "$GITHUB_ENV"
+          echo "SUPABASE_PUBLISHABLE_KEY=$PUBLISHABLE_KEY" >> "$GITHUB_ENV"
+
+      - name: Run API tests
+        if: steps.changes.outputs.changed == 'true'
+        working-directory: backend
+        run: pnpm test

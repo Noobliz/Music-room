@@ -3,7 +3,7 @@ import { checkDatabaseConnection, closeDatabaseConnection } from './db/client.js
 import { buildServer } from './server.js';
 
 const main = async () => {
-  const server = buildServer();
+  const server = await buildServer();
 
   try {
     await checkDatabaseConnection();

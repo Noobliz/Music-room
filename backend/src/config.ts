@@ -15,6 +15,11 @@ const envSchema = z.object({
   POSTGRES_USER: z.string().min(1),
   POSTGRES_PASSWORD: z.string().min(1),
   DATABASE_URL: z.string().url(),
+  SUPABASE_URL: z
+    .string()
+    .url()
+    .transform((url) => url.replace(/\/+$/, '')),
+  SUPABASE_PUBLISHABLE_KEY: z.string().min(1),
 });
 
 const parsedEnv = envSchema.safeParse(process.env);
@@ -38,5 +43,9 @@ export const appConfig = {
     port: parsedEnv.data.POSTGRES_PORT,
     name: parsedEnv.data.POSTGRES_DB,
     user: parsedEnv.data.POSTGRES_USER,
+  },
+  supabase: {
+    url: parsedEnv.data.SUPABASE_URL,
+    publishableKey: parsedEnv.data.SUPABASE_PUBLISHABLE_KEY,
   },
 } as const;
