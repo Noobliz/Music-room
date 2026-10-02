@@ -4,6 +4,7 @@ import { z } from 'zod';
 import * as authController from '../controllers/auth.controller.js';
 import {
   authResponseSchema,
+  authUserSchema,
   loginBodySchema,
   refreshBodySchema,
   signupBodySchema,
@@ -76,14 +77,32 @@ export const authRoutes: FastifyPluginAsyncZod = async (server) => {
         tags: ['auth'],
         summary: 'Log out of the current session',
         description:
-          'Revokes the refresh tokens of the current session. Other sessions of the user stay active.',
+          'Ends the current session: its access and refresh tokens stop working immediately. Other sessions of the user stay active.',
         security: [{ bearerAuth: [] }],
         response: {
           204: z.null().describe('Logged out'),
-          401: errorResponseSchema.describe('TOKEN_MISSING or TOKEN_INVALID'),
+          401: errorResponseSchema.describe('TOKEN_MISSING, TOKEN_INVALID or TOKEN_EXPIRED'),
         },
       },
+      onRequest: [server.authenticate],
     },
     authController.logOut,
+  );
+
+  server.get(
+    '/me',
+    {
+      schema: {
+        tags: ['auth'],
+        summary: 'Get the authenticated user',
+        security: [{ bearerAuth: [] }],
+        response: {
+          200: authUserSchema,
+          401: errorResponseSchema.describe('TOKEN_MISSING, TOKEN_INVALID or TOKEN_EXPIRED'),
+        },
+      },
+      onRequest: [server.authenticate],
+    },
+    authController.getMe,
   );
 };

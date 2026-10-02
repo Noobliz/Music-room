@@ -15,7 +15,10 @@ const envSchema = z.object({
   POSTGRES_USER: z.string().min(1),
   POSTGRES_PASSWORD: z.string().min(1),
   DATABASE_URL: z.string().url(),
-  SUPABASE_URL: z.string().url(),
+  SUPABASE_URL: z
+    .string()
+    .url()
+    .transform((url) => url.replace(/\/+$/, '')),
   SUPABASE_PUBLISHABLE_KEY: z.string().min(1),
 });
 

@@ -7,6 +7,7 @@ import {
   validatorCompiler,
 } from 'fastify-type-provider-zod';
 
+import { authenticatePlugin } from './plugins/authenticate.plugin.js';
 import { errorHandlerPlugin } from './plugins/error-handler.plugin.js';
 import { authRoutes } from './routes/auth.routes.js';
 import { healthRoutes } from './routes/health.routes.js';
@@ -43,6 +44,7 @@ export const buildServer = async () => {
   });
 
   await server.register(errorHandlerPlugin);
+  await server.register(authenticatePlugin);
 
   await server.register(healthRoutes);
   await server.register(authRoutes, { prefix: '/auth' });

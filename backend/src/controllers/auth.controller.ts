@@ -1,16 +1,7 @@
 import { type FastifyReply, type FastifyRequest } from 'fastify';
 
-import { AppError } from '../errors/app-error.js';
 import { type LoginBody, type RefreshBody, type SignupBody } from '../schemas/auth.schema.js';
 import * as authService from '../services/auth.service.js';
-
-const getBearerToken = (request: FastifyRequest): string => {
-  const [scheme, token] = request.headers.authorization?.split(' ') ?? [];
-  if (scheme?.toLowerCase() !== 'bearer' || !token) {
-    throw new AppError(401, 'TOKEN_MISSING', 'Missing bearer token');
-  }
-  return token;
-};
 
 export const signUp = async (
   request: FastifyRequest<{ Body: SignupBody }>,
@@ -29,6 +20,10 @@ export const refresh = async (request: FastifyRequest<{ Body: RefreshBody }>) =>
 };
 
 export const logOut = async (request: FastifyRequest, reply: FastifyReply) => {
-  await authService.logOut(getBearerToken(request));
+  await authService.logOut(request.auth.accessToken);
   return reply.status(204).send();
+};
+
+export const getMe = async (request: FastifyRequest) => {
+  return authService.getCurrentUser(request.auth);
 };

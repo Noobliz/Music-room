@@ -7,6 +7,7 @@ import {
 import { AppError } from '../errors/app-error.js';
 import { createSupabaseClient } from '../lib/supabase.js';
 import { findProfileById, findProfileByUsername } from '../models/profile.model.js';
+import { type AuthContext } from './token.service.js';
 import {
   type AuthResponse,
   type AuthUser,
@@ -46,15 +47,15 @@ const toSession = (session: SupabaseSession): Session => ({
   expiresAt: session.expires_at ?? Math.floor(Date.now() / 1000) + session.expires_in,
 });
 
-const toAuthUser = async (user: SupabaseUser): Promise<AuthUser> => {
-  const profile = await findProfileById(user.id);
+const buildAuthUser = async (id: string, email: string | undefined): Promise<AuthUser> => {
+  const profile = await findProfileById(id);
   if (!profile) {
-    throw new Error(`Profile missing for user ${user.id}`);
+    throw new Error(`Profile missing for user ${id}`);
   }
-  if (!user.email) {
-    throw new Error(`Email missing for user ${user.id}`);
+  if (!email) {
+    throw new Error(`Email missing for user ${id}`);
   }
-  return { id: user.id, email: user.email, username: profile.username };
+  return { id, email, username: profile.username };
 };
 
 const toAuthResponse = async (
@@ -64,7 +65,7 @@ const toAuthResponse = async (
   if (!user || !session) {
     throw new Error('Supabase Auth returned no session');
   }
-  return { user: await toAuthUser(user), session: toSession(session) };
+  return { user: await buildAuthUser(user.id, user.email), session: toSession(session) };
 };
 
 export const signUp = async ({ email, password, username }: SignupBody): Promise<AuthResponse> => {
@@ -132,4 +133,8 @@ export const logOut = async (accessToken: string): Promise<void> => {
     }
     throw toCommonAppError(error) ?? error;
   }
+};
+
+export const getCurrentUser = async ({ userId, email }: AuthContext): Promise<AuthUser> => {
+  return buildAuthUser(userId, email);
 };
