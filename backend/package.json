@@ -8,12 +8,14 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.test.json",
     "lint": "eslint .",
     "lint:ci": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix",
     "format": "prettier . --write",
     "format:check": "prettier . --check",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "sync-local-config": "sh scripts/sync-supabase-config.sh",
     "db:start": "pnpm sync-local-config && supabase start",
     "db:stop": "supabase stop",
@@ -45,6 +47,7 @@
     "supabase": "^2.39.2",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
-    "typescript-eslint": "^8.46.1"
+    "typescript-eslint": "^8.46.1",
+    "vitest": "^4.1.11"
   }
 }

@@ -58,6 +58,7 @@ If no `.env` file exists, `make` creates one automatically with the defaults abo
 | `make backend start` | Start Supabase and the API without reinstalling |
 | `make backend stop` | Stop the API process and Supabase |
 | `make backend reset` | Reset Supabase database, then run the API |
+| `make backend studio` | Open Supabase Studio in the browser |
 
 ### Mobile sub-commands
 

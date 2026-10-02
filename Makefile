@@ -2,7 +2,7 @@ SHELL := /bin/sh
 
 .DEFAULT_GOAL := help
 .PHONY: help banner install backend mobile clean fclean re \
-        backend-setup backend-start backend-stop backend-reset backend-test \
+        backend-setup backend-start backend-stop backend-reset backend-test backend-studio \
         mobile-start mobile-stop mobile-reset \
         env-sync doc ensure-env
 .SILENT:
@@ -55,7 +55,8 @@ help: banner
 	printf "  make backend start      Start Supabase and the API without installing\n"
 	printf "  make backend stop       Stop the API process and Supabase\n"
 	printf "  make backend reset      Reset Supabase, then run the API\n"
-	printf "  make backend test       Run the database tests (pgTAP)\n"
+	printf "  make backend test       Run the database (pgTAP) and API (Vitest) tests\n"
+	printf "  make backend studio     Open Supabase Studio in the browser\n"
 	printf "\n"
 	printf "  make mobile start       Install and launch on a connected device/emulator\n"
 	printf "  make mobile stop        Stop the app on the device\n"
@@ -111,12 +112,19 @@ backend-test: ensure-env
 	$(call run,Starting local Supabase,cd "$(BACKEND_DIR)" && pnpm db:start)
 	printf "\n  [ TEST ] Running database tests\n\n"
 	cd "$(BACKEND_DIR)" && pnpm db:test
+	printf "\n  [ TEST ] Running API tests\n\n"
+	cd "$(BACKEND_DIR)" && pnpm test
+
+backend-studio:
+	printf "  [ STUDIO ] Opening Supabase Studio at http://127.0.0.1:%s\n\n" "$$(grep -m1 '^SUPABASE_STUDIO_PORT=' "$(ENV_FILE)" 2>/dev/null | cut -d= -f2 || echo 54333)"
+	open "http://127.0.0.1:$$(grep -m1 '^SUPABASE_STUDIO_PORT=' "$(ENV_FILE)" 2>/dev/null | cut -d= -f2 || echo 54333)"
 
 setup: backend-setup
 start: backend-start
 stop: backend-stop
 reset: backend-reset
 test: backend-test
+studio: backend-studio
 
 mobile: banner
 
