@@ -5,9 +5,10 @@ import {
   jsonSchemaTransform,
   serializerCompiler,
   validatorCompiler,
-  type ZodTypeProvider,
 } from 'fastify-type-provider-zod';
-import { z } from 'zod';
+
+import { errorHandlerPlugin } from './plugins/error-handler.plugin.js';
+import { healthRoutes } from './routes/health.routes.js';
 
 export const buildServer = async () => {
   const server = Fastify({
@@ -31,20 +32,9 @@ export const buildServer = async () => {
     routePrefix: '/docs',
   });
 
-  server.withTypeProvider<ZodTypeProvider>().get(
-    '/health',
-    {
-      schema: {
-        tags: ['system'],
-        response: {
-          200: z.object({ status: z.literal('ok') }),
-        },
-      },
-    },
-    async () => {
-      return { status: 'ok' as const };
-    },
-  );
+  await server.register(errorHandlerPlugin);
+
+  await server.register(healthRoutes);
 
   return server;
 };

@@ -1,0 +1,15 @@
+export const ERROR_CODES = [
+  'BAD_REQUEST',
+  'VALIDATION_ERROR',
+  'NOT_FOUND',
+  'EMAIL_TAKEN',
+  'USERNAME_TAKEN',
+  'INVALID_CREDENTIALS',
+  'INVALID_REFRESH_TOKEN',
+  'TOKEN_MISSING',
+  'TOKEN_INVALID',
+  'TOKEN_EXPIRED',
+  'INTERNAL_ERROR',
+] as const;
+
+export type ErrorCode = (typeof ERROR_CODES)[number];

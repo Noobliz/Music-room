@@ -184,5 +184,8 @@ ensure-env:
 			printf "%s\n" "POSTGRES_USER=postgres"; \
 			printf "%s\n" "POSTGRES_PASSWORD=postgres"; \
 			printf "%s\n" "DATABASE_URL=postgres://postgres:postgres@127.0.0.1:54322/postgres"; \
+			printf "%s\n" ""; \
+			printf "%s\n" "SUPABASE_URL=http://127.0.0.1:54321"; \
+			printf "%s\n" "SUPABASE_PUBLISHABLE_KEY=sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH"; \
 		} > "$(ENV_FILE)"; \
 	fi
