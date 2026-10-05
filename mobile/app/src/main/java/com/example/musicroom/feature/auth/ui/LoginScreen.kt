@@ -1,4 +1,4 @@
-package com.example.musicroom.feature.auth
+package com.example.musicroom.feature.auth.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -22,7 +22,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import java.security.Key
 
 @Composable
 fun LoginScreen(
