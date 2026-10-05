@@ -1,4 +1,4 @@
-package com.example.music_room
+package com.example.musicroom
 
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4
