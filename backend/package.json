@@ -19,7 +19,8 @@
     "db:stop": "supabase stop",
     "db:status": "supabase status",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate"
+    "db:migrate": "drizzle-kit migrate",
+    "db:test": "supabase test db"
   },
   "dependencies": {
     "@fastify/swagger": "^9.8.1",

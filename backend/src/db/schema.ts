@@ -1,1 +1,2 @@
-// Application tables will be declared here and used by Drizzle migrations.
+// Application tables are declared in ./schema/ and re-exported here for Drizzle migrations.
+export * from './schema/profiles.js';
