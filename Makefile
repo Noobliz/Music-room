@@ -112,6 +112,7 @@ backend-test: ensure-env
 	printf "\n  [ TEST ] Running database tests\n\n"
 	cd "$(BACKEND_DIR)" && pnpm db:test
 
+
 setup: backend-setup
 start: backend-start
 stop: backend-stop
