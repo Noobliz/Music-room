@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 import {
   type AuthError,
   isAuthApiError,
@@ -24,6 +26,7 @@ import {
   type VerifyEmailBody,
 } from '../schemas/auth.schema.js';
 
+const EMAIL_TAKEN_CODES = new Set(['email_exists', 'user_already_exists']);
 const INVALID_REFRESH_TOKEN_CODES = new Set([
   'refresh_token_not_found',
   'refresh_token_already_used',
@@ -124,6 +127,9 @@ export const signUp = async ({
   });
 
   if (error) {
+    if (isAuthApiError(error) && error.code !== undefined && EMAIL_TAKEN_CODES.has(error.code)) {
+      return { user: { id: randomUUID(), email, username } };
+    }
     throw toCommonAppError(error) ?? error;
   }
   if (!data.user) {
