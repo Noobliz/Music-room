@@ -1,0 +1,23 @@
+meta {
+  name: Resend confirmation
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/auth/email/resend
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "{{email}}"
+  }
+}
+
+tests {
+  test("returns HTTP 202", () => {
+    expect(res.status).to.equal(202);
+  });
+}

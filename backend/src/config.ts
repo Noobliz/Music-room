@@ -20,6 +20,11 @@ const envSchema = z.object({
     .url()
     .transform((url) => url.replace(/\/+$/, '')),
   SUPABASE_PUBLISHABLE_KEY: z.string().min(1),
+  APP_DEEP_LINK_URL: z
+    .string()
+    .url()
+    .default('musicroom://auth')
+    .transform((url) => url.replace(/\/+$/, '')),
 });
 
 const parsedEnv = envSchema.safeParse(process.env);
@@ -47,5 +52,8 @@ export const appConfig = {
   supabase: {
     url: parsedEnv.data.SUPABASE_URL,
     publishableKey: parsedEnv.data.SUPABASE_PUBLISHABLE_KEY,
+  },
+  app: {
+    deepLinkUrl: parsedEnv.data.APP_DEEP_LINK_URL,
   },
 } as const;
