@@ -34,7 +34,6 @@ class HealthViewModel: ViewModel() {
                 }
             } catch(e: IOException) {
 
-                Log.e("HealthVM", "Network failure: ${e::class.simpleName} - ${e.message}")
                 HealthState.Unreachable
 
             } catch(e: SerializationException) {

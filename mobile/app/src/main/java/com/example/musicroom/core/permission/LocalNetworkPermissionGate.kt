@@ -3,6 +3,7 @@ package com.example.musicroom.core.permission
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
@@ -22,6 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
+private const val LOCAL_NETWORK_API_LEVEL: Int = 37
 @Composable
 fun LocalNetworkPermissionGate(
     content: @Composable () -> Unit
@@ -31,6 +33,7 @@ fun LocalNetworkPermissionGate(
     var isGranted: Boolean by remember {
 
         mutableStateOf(
+            Build.VERSION.SDK_INT < LOCAL_NETWORK_API_LEVEL ||
             ContextCompat.checkSelfPermission(
                 context,
                 Manifest.permission.ACCESS_LOCAL_NETWORK
