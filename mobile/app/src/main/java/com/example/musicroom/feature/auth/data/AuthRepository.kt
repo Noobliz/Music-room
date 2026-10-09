@@ -1,5 +1,6 @@
 package com.example.musicroom.feature.auth.data
 
+import com.example.musicroom.core.storage.SessionStorage
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import java.io.IOException
@@ -8,6 +9,7 @@ import retrofit2.Response
 class AuthRepository(
     private val api: AuthApiService,
     private val json: Json,
+    private val storage: SessionStorage
 ) {
     private fun parseError(response: Response<*>): AuthError {
         val raw = response.errorBody()?.string()
@@ -28,8 +30,10 @@ class AuthRepository(
             val response = call()
             if (response.isSuccessful) {
                 val body = response.body()
-                if (body != null)
+                if (body != null) {
+                    storage.save(body.session)
                     AuthResult.Success(body)
+                }
                 else AuthResult.Failure(AuthError.Unknown(response.code()))
             }
             else AuthResult.Failure(parseError(response))
