@@ -8,7 +8,11 @@ import {
   authUserSchema,
   emailBodySchema,
   emailLinkQuerySchema,
+  identitiesResponseSchema,
+  idTokenBodySchema,
   loginBodySchema,
+  oauthAuthResponseSchema,
+  oauthProviderParamsSchema,
   refreshBodySchema,
   resetPasswordBodySchema,
   signupBodySchema,
@@ -209,5 +213,93 @@ export const authRoutes: FastifyPluginAsyncZod = async (server) => {
       onRequest: [server.authenticate],
     },
     authController.getMe,
+  );
+
+  server.post(
+    '/oauth/:provider',
+    {
+      schema: {
+        tags: ['auth'],
+        summary: 'Log in with a social account',
+        description:
+          'Exchanges an ID token obtained by the app from the provider SDK for a session. The first sign-in creates the account with a generated username ("isNewUser": true). If an account with the same verified email already exists, the social account is linked to it and its session is returned.',
+        params: oauthProviderParamsSchema,
+        body: idTokenBodySchema,
+        response: {
+          200: oauthAuthResponseSchema,
+          400: errorResponseSchema.describe('VALIDATION_ERROR or BAD_REQUEST'),
+          401: errorResponseSchema.describe('INVALID_ID_TOKEN'),
+          429: errorResponseSchema.describe('RATE_LIMITED'),
+        },
+      },
+    },
+    authController.signInWithProvider,
+  );
+
+  server.get(
+    '/identities',
+    {
+      schema: {
+        tags: ['auth'],
+        summary: 'List the login methods of the account',
+        description: 'Returns the password login ("email") and the linked social accounts.',
+        security: [{ bearerAuth: [] }],
+        response: {
+          200: identitiesResponseSchema,
+          401: errorResponseSchema.describe('TOKEN_MISSING, TOKEN_INVALID or TOKEN_EXPIRED'),
+        },
+      },
+      onRequest: [server.authenticate],
+    },
+    authController.listIdentities,
+  );
+
+  server.post(
+    '/identities/:provider',
+    {
+      schema: {
+        tags: ['auth'],
+        summary: 'Link a social account',
+        description:
+          'Links the social account of the ID token to the authenticated account, then returns its login methods. The current session stays valid.',
+        security: [{ bearerAuth: [] }],
+        params: oauthProviderParamsSchema,
+        body: idTokenBodySchema,
+        response: {
+          200: identitiesResponseSchema,
+          400: errorResponseSchema.describe('VALIDATION_ERROR or BAD_REQUEST'),
+          401: errorResponseSchema.describe(
+            'INVALID_ID_TOKEN, TOKEN_MISSING, TOKEN_INVALID or TOKEN_EXPIRED',
+          ),
+          409: errorResponseSchema.describe('IDENTITY_ALREADY_LINKED'),
+          429: errorResponseSchema.describe('RATE_LIMITED'),
+        },
+      },
+      onRequest: [server.authenticate],
+    },
+    authController.linkIdentity,
+  );
+
+  server.delete(
+    '/identities/:provider',
+    {
+      schema: {
+        tags: ['auth'],
+        summary: 'Unlink a social account',
+        description:
+          'Removes the social account from the login methods. The last login method of an account cannot be removed.',
+        security: [{ bearerAuth: [] }],
+        params: oauthProviderParamsSchema,
+        response: {
+          204: z.null().describe('Social account unlinked'),
+          400: errorResponseSchema.describe('VALIDATION_ERROR'),
+          401: errorResponseSchema.describe('TOKEN_MISSING, TOKEN_INVALID or TOKEN_EXPIRED'),
+          404: errorResponseSchema.describe('IDENTITY_NOT_FOUND'),
+          409: errorResponseSchema.describe('LAST_IDENTITY or IDENTITY_NOT_DELETABLE'),
+        },
+      },
+      onRequest: [server.authenticate],
+    },
+    authController.unlinkIdentity,
   );
 };

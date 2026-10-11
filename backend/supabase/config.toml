@@ -40,6 +40,7 @@ additional_redirect_urls = ["http://127.0.0.1:3000"]
 jwt_expiry = 3600
 enable_signup = true
 enable_anonymous_sign_ins = false
+enable_manual_linking = true
 
 [auth.rate_limit]
 email_sent = 100
@@ -59,6 +60,11 @@ content_path = "./supabase/templates/confirmation.html"
 [auth.email.template.recovery]
 subject = "Reset your Music Room password"
 content_path = "./supabase/templates/recovery.html"
+
+[auth.external.google]
+enabled = true
+client_id = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)"
+skip_nonce_check = false
 
 [storage]
 enabled = true

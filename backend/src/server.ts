@@ -28,7 +28,10 @@ export const buildServer = async () => {
       },
       tags: [
         { name: 'system', description: 'Service status' },
-        { name: 'auth', description: 'Email and password authentication' },
+        {
+          name: 'auth',
+          description: 'Email, password and Google authentication, linked login methods',
+        },
       ],
       components: {
         securitySchemes: {

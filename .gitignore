@@ -5,3 +5,4 @@ dist/
 .pnpm-store/
 **/.pnpm-store/
 **/supabase/.temp/
+backend/supabase/.env

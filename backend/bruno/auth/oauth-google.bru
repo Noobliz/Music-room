@@ -1,0 +1,30 @@
+meta {
+  name: Log in with Google
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{baseUrl}}/auth/oauth/google
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "idToken": "{{googleIdToken}}"
+  }
+}
+
+script:post-response {
+  if (res.status === 200) {
+    bru.setVar("accessToken", res.body.session.accessToken);
+    bru.setVar("refreshToken", res.body.session.refreshToken);
+  }
+}
+
+tests {
+  test("returns HTTP 200", () => {
+    expect(res.status).to.equal(200);
+  });
+}

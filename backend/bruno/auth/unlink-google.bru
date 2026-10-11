@@ -1,0 +1,21 @@
+meta {
+  name: Unlink Google
+  type: http
+  seq: 13
+}
+
+delete {
+  url: {{baseUrl}}/auth/identities/google
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{accessToken}}
+}
+
+tests {
+  test("returns HTTP 204", () => {
+    expect(res.status).to.equal(204);
+  });
+}

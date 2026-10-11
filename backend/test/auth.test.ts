@@ -229,6 +229,9 @@ describe('auth', () => {
         '/auth/email/resend',
         '/auth/password/forgot',
         '/auth/password/reset',
+        '/auth/oauth/{provider}',
+        '/auth/identities',
+        '/auth/identities/{provider}',
       ]),
     );
   });

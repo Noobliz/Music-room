@@ -36,6 +36,7 @@ The `.env.example` uses `YOUR_*` placeholders. Replace them with actual port num
 | `SUPABASE_URL` | Supabase API base URL (uses `SUPABASE_API_PORT`) | `http://127.0.0.1:54321` |
 | `SUPABASE_PUBLISHABLE_KEY` | Supabase publishable key (`PUBLISHABLE_KEY` in `pnpm db:status`) | `sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH` (local CLI default) |
 | `APP_DEEP_LINK_URL` | Mobile app deep link base that `GET /auth/redirect` sends email links to (optional) | `musicroom://auth` |
+| `SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID` | Google OAuth Web client ID whose ID tokens Supabase Auth accepts, copied to `backend/supabase/.env` by `make env sync` (optional) | `1234-abc.apps.googleusercontent.com` |
 
 Adjust the ports if they conflict with other services on your machine. Make sure `POSTGRES_PORT` and `SUPABASE_DB_PORT` stay in sync, that `DATABASE_URL` reflects the chosen port, and that `SUPABASE_URL` uses `SUPABASE_API_PORT`.
 
