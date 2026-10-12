@@ -14,6 +14,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import com.example.musicroom.core.ui.gradientBackground
 import com.example.musicroom.core.permission.LocalNetworkPermissionGate
 import com.example.musicroom.feature.auth.data.AuthUser
 import com.example.musicroom.feature.auth.ui.HealthScreen
@@ -38,7 +40,10 @@ class MainActivity : ComponentActivity() {
             val currentUser: AuthUser? by mainViewModel.currentUser.collectAsState()
             MusicroomTheme {
                 LocalNetworkPermissionGate {
-                    Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+                    Scaffold(
+                        modifier = Modifier.fillMaxSize().gradientBackground(),
+                        containerColor = Color.Transparent,
+                    ) { innerPadding ->
 //                        LoginScreen(
 //                            state = loginViewModel.state,
 //                            onLoginClick = { inputEmail: String, inputPassword: String ->
