@@ -56,8 +56,7 @@ class MainActivity : ComponentActivity() {
                             HomeScreen(
                                 user = user,
                                 onLogoutClick = { mainViewModel.logout() },
-                                modifier = Modifier.padding(innerPadding),
-                            )
+                                modifier = Modifier.padding(innerPadding),                            )
                         }
                         else if (showSignup) {
                             SignupScreen(
