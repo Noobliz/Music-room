@@ -11,7 +11,7 @@ interface AuthApiService {
     suspend fun checkServerHealth(): Response<HealthResponse>
 
     @POST("auth/signup")
-    suspend fun signup(@Body request: SignupRequest): Response<AuthResponse>
+    suspend fun signup(@Body request: SignupRequest): Response<SignupResponse>
 
     @POST("auth/login")
     suspend fun login(@Body request: LoginRequest): Response<AuthResponse>

@@ -12,8 +12,10 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.musicroom.MusicRoomApp
 import com.example.musicroom.feature.auth.data.AuthError
 import com.example.musicroom.feature.auth.data.AuthRepository
+import com.example.musicroom.feature.auth.data.AuthResponse
 import com.example.musicroom.feature.auth.data.AuthResult
 import com.example.musicroom.feature.auth.data.FieldError
+import com.example.musicroom.feature.auth.data.SignupResponse
 import kotlinx.coroutines.launch
 class SignupViewModel(
     private val repository: AuthRepository
@@ -35,7 +37,7 @@ class SignupViewModel(
 
         state = AuthUiState.Loading
         viewModelScope.launch {
-            state = when (val res: AuthResult = repository.signup(cleanEmail, password, cleanUsername)) {
+            state = when (val res: AuthResult<SignupResponse> = repository.signup(cleanEmail, password, cleanUsername)) {
                 is AuthResult.Success -> AuthUiState.Success
                 is AuthResult.Failure -> AuthUiState.Failure(res.error)
             }

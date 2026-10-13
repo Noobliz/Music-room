@@ -13,6 +13,7 @@ import com.example.musicroom.feature.auth.data.AuthRepository
 import com.example.musicroom.feature.auth.data.AuthResult
 import kotlinx.coroutines.launch
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
+import com.example.musicroom.feature.auth.data.AuthResponse
 
 
 class LoginViewModel(
@@ -30,7 +31,7 @@ class LoginViewModel(
 
         state = AuthUiState.Loading
         viewModelScope.launch {
-            val res: AuthResult = repository.login(email, password)
+            val res: AuthResult<AuthResponse> = repository.login(email, password)
             state = when (res) {
                 is AuthResult.Success -> AuthUiState.Success
                 is AuthResult.Failure -> AuthUiState.Failure(res.error)
