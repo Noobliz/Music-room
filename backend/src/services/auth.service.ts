@@ -41,7 +41,7 @@ const INVALID_REFRESH_TOKEN_CODES = new Set([
   'session_expired',
 ]);
 const RATE_LIMIT_CODES = new Set(['over_request_rate_limit', 'over_email_send_rate_limit']);
-const NEW_USER_WINDOW_MS = 60_000;
+const CLOCK_SKEW_MS = 1_000;
 
 const toCommonAppError = (error: unknown): AppError | undefined => {
   if (!isAuthApiError(error)) {
@@ -268,17 +268,14 @@ export const getCurrentUser = async ({ userId, email }: AuthContext): Promise<Au
   return buildAuthUser(userId, email);
 };
 
-const isNewUser = (user: SupabaseUser): boolean => {
-  if (!user.last_sign_in_at) {
-    return true;
-  }
-  return Date.parse(user.last_sign_in_at) - Date.parse(user.created_at) < NEW_USER_WINDOW_MS;
-};
+const isCreatedSince = (user: SupabaseUser, startedAt: number): boolean =>
+  Date.parse(user.created_at) >= startedAt - CLOCK_SKEW_MS;
 
 export const signInWithProvider = async (
   { provider }: OAuthProviderParams,
   { idToken, nonce }: IdTokenBody,
 ): Promise<OAuthAuthResponse> => {
+  const startedAt = Date.now();
   const { data, error } = await createSupabaseClient().auth.signInWithIdToken({
     provider,
     token: idToken,
@@ -290,7 +287,7 @@ export const signInWithProvider = async (
   }
 
   const response = await toAuthResponse(data.user, data.session);
-  return { ...response, isNewUser: isNewUser(data.user) };
+  return { ...response, isNewUser: isCreatedSince(data.user, startedAt) };
 };
 
 const toIdentity = (identity: UserIdentity): Identity => ({
