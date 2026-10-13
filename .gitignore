@@ -6,3 +6,4 @@ dist/
 **/.pnpm-store/
 **/supabase/.temp/
 backend/supabase/.env
+backend/bruno/.env

@@ -1,0 +1,30 @@
+meta {
+  name: Refresh Google ID token
+  type: http
+  seq: 10
+}
+
+post {
+  url: https://oauth2.googleapis.com/token
+  body: formUrlEncoded
+  auth: none
+}
+
+body:form-urlencoded {
+  grant_type: refresh_token
+  client_id: {{process.env.GOOGLE_CLIENT_ID}}
+  client_secret: {{process.env.GOOGLE_CLIENT_SECRET}}
+  refresh_token: {{process.env.GOOGLE_REFRESH_TOKEN}}
+}
+
+script:post-response {
+  if (res.status === 200) {
+    bru.setVar("googleIdToken", res.body.id_token);
+  }
+}
+
+tests {
+  test("returns HTTP 200", () => {
+    expect(res.status).to.equal(200);
+  });
+}
