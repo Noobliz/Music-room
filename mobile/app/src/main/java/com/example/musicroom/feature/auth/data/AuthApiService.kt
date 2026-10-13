@@ -16,8 +16,8 @@ interface AuthApiService {
     @POST("auth/login")
     suspend fun login(@Body request: LoginRequest): Response<AuthResponse>
 
-    @POST("auth/refresh")
-    suspend fun refresh(@Body request: RefreshRequest): Response<AuthResponse>
+//    @POST("auth/refresh")
+//    suspend fun refresh(@Body request: RefreshRequest): Response<AuthResponse>
     @POST("auth/refresh")
     fun refreshBlocking(@Body request: RefreshRequest): Call<AuthResponse> // sans suspend car la fonction TokenAuthenticator de okhttp n'est pas une coroutine
 

@@ -23,7 +23,7 @@ class TokenAuthenticator(
 
         if (response.priorResponse != null) return null
 
-        //genre de mutex pour eviter 2 authenticate au meme moment sur different threads
+        //genre de mutex pour eviter 2 authenticate au meme moment sur differents threads
         synchronized(lock){
             val expiredToken: String? = response.request.header("Authorization")
             val expiredTokenTrimmed: String? = expiredToken?.removePrefix("Bearer ")

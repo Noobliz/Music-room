@@ -55,8 +55,8 @@ class AuthRepository(
         execute { api.signup(SignupRequest(email, password, username)) }
     suspend fun login(email: String, password: String): AuthResult =
         execute { api.login(LoginRequest(email, password)) }
-    suspend fun refresh(refreshToken: String): AuthResult =
-        execute { api.refresh(RefreshRequest(refreshToken)) }
+//    suspend fun refresh(refreshToken: String): AuthResult =
+//        execute { api.refresh(RefreshRequest(refreshToken)) }
 
     suspend fun logout(){
         try{
