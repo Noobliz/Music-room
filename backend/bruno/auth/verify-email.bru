@@ -1,0 +1,30 @@
+meta {
+  name: Verify email
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/auth/email/verify
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "tokenHash": "{{tokenHash}}"
+  }
+}
+
+script:post-response {
+  if (res.status === 200) {
+    bru.setVar("accessToken", res.body.session.accessToken);
+    bru.setVar("refreshToken", res.body.session.refreshToken);
+  }
+}
+
+tests {
+  test("returns HTTP 200", () => {
+    expect(res.status).to.equal(200);
+  });
+}

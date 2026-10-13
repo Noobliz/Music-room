@@ -18,15 +18,8 @@ body:json {
   }
 }
 
-script:post-response {
-  if (res.status === 201) {
-    bru.setVar("accessToken", res.body.session.accessToken);
-    bru.setVar("refreshToken", res.body.session.refreshToken);
-  }
-}
-
 tests {
-  test("returns HTTP 201, or 409 if the account already exists", () => {
+  test("returns HTTP 201, or 409 if the username is taken", () => {
     expect([201, 409]).to.include(res.status);
   });
 }

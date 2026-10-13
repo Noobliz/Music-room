@@ -21,6 +21,29 @@ export const loginBodySchema = z.object({
   password: z.string().min(1).max(72),
 });
 
+export const emailBodySchema = z.object({
+  email: emailSchema,
+});
+
+const tokenHashSchema = z
+  .string()
+  .min(1)
+  .describe('"token_hash" query parameter of the email link');
+
+export const emailLinkQuerySchema = z.object({
+  token_hash: z.string().min(1),
+  type: z.enum(['email', 'recovery']).describe('"email" for confirmation, "recovery" for reset'),
+});
+
+export const verifyEmailBodySchema = z.object({
+  tokenHash: tokenHashSchema,
+});
+
+export const resetPasswordBodySchema = z.object({
+  tokenHash: tokenHashSchema,
+  password: passwordSchema,
+});
+
 export const refreshBodySchema = z.object({
   refreshToken: z.string().min(1).describe('Refresh token from the last session'),
 });
@@ -48,9 +71,26 @@ export const authResponseSchema = z.object({
   session: sessionSchema,
 });
 
+export const signupResponseSchema = z
+  .object({
+    user: authUserSchema,
+  })
+  .describe('Account created, waiting for email confirmation');
+
+export const acceptedResponseSchema = z
+  .object({
+    message: z.string(),
+  })
+  .describe('Request accepted');
+
 export type SignupBody = z.infer<typeof signupBodySchema>;
 export type LoginBody = z.infer<typeof loginBodySchema>;
 export type RefreshBody = z.infer<typeof refreshBodySchema>;
+export type EmailBody = z.infer<typeof emailBodySchema>;
+export type EmailLinkQuery = z.infer<typeof emailLinkQuerySchema>;
+export type VerifyEmailBody = z.infer<typeof verifyEmailBodySchema>;
+export type ResetPasswordBody = z.infer<typeof resetPasswordBodySchema>;
 export type Session = z.infer<typeof sessionSchema>;
 export type AuthUser = z.infer<typeof authUserSchema>;
 export type AuthResponse = z.infer<typeof authResponseSchema>;
+export type SignupResponse = z.infer<typeof signupResponseSchema>;

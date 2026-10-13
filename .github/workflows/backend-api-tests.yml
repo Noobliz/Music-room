@@ -63,12 +63,12 @@ jobs:
         working-directory: backend
         run: pnpm install --frozen-lockfile
 
-      - name: Start local Supabase (database, auth and gateway only)
+      - name: Start local Supabase (database, auth, gateway and mailpit only)
         if: steps.changes.outputs.changed == 'true'
         working-directory: backend
         run: >
           pnpm exec supabase start
-          -x realtime,storage-api,imgproxy,mailpit,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+          -x realtime,storage-api,imgproxy,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
 
       - name: Export Supabase API settings
         if: steps.changes.outputs.changed == 'true'

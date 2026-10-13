@@ -25,7 +25,7 @@ The `.env.example` uses `YOUR_*` placeholders. Replace them with actual port num
 | `SUPABASE_DB_SHADOW_PORT` | Shadow database (migrations) | `54320` |
 | `SUPABASE_DB_POOLER_PORT` | PgBouncer connection pooler | `54329` |
 | `SUPABASE_STUDIO_PORT` | Supabase Studio UI | `54333` |
-| `SUPABASE_INBUCKET_PORT` | Inbucket email testing | `54324` |
+| `SUPABASE_INBUCKET_PORT` | Mailpit email testing (`make backend mail`) | `54324` |
 | `SUPABASE_ANALYTICS_PORT` | Logflare analytics | `54327` |
 | `POSTGRES_HOST` | PostgreSQL hostname | `127.0.0.1` |
 | `POSTGRES_PORT` | PostgreSQL port (same as `SUPABASE_DB_PORT`) | `54322` |
@@ -35,6 +35,7 @@ The `.env.example` uses `YOUR_*` placeholders. Replace them with actual port num
 | `DATABASE_URL` | Full connection string | `postgres://postgres:postgres@127.0.0.1:54322/postgres` |
 | `SUPABASE_URL` | Supabase API base URL (uses `SUPABASE_API_PORT`) | `http://127.0.0.1:54321` |
 | `SUPABASE_PUBLISHABLE_KEY` | Supabase publishable key (`PUBLISHABLE_KEY` in `pnpm db:status`) | `sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH` (local CLI default) |
+| `APP_DEEP_LINK_URL` | Mobile app deep link base that `GET /auth/redirect` sends email links to (optional) | `musicroom://auth` |
 
 Adjust the ports if they conflict with other services on your machine. Make sure `POSTGRES_PORT` and `SUPABASE_DB_PORT` stay in sync, that `DATABASE_URL` reflects the chosen port, and that `SUPABASE_URL` uses `SUPABASE_API_PORT`.
 
@@ -59,6 +60,7 @@ If no `.env` file exists, `make` creates one automatically with the defaults abo
 | `make backend stop` | Stop the API process and Supabase |
 | `make backend reset` | Reset Supabase database, then run the API |
 | `make backend studio` | Open Supabase Studio in the browser |
+| `make backend mail` | Open Mailpit (local confirmation and reset emails) in the browser |
 
 ### Mobile sub-commands
 
