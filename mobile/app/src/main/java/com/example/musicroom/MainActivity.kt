@@ -24,6 +24,8 @@ import com.example.musicroom.feature.auth.ui.LoginScreen
 import com.example.musicroom.feature.auth.ui.LoginViewModel
 import com.example.musicroom.feature.auth.ui.SignupScreen
 import com.example.musicroom.feature.auth.ui.SignupViewModel
+import com.example.musicroom.feature.auth.ui.VerifyEmailScreen
+import com.example.musicroom.feature.auth.ui.VerifyEmailViewModel
 import com.example.musicroom.feature.home.ui.HomeScreen
 import com.example.musicroom.ui.theme.MusicroomTheme
 
@@ -31,7 +33,11 @@ class MainActivity : ComponentActivity() {
     private val loginViewModel: LoginViewModel by viewModels { LoginViewModel.Factory }
     private val signupViewModel: SignupViewModel by viewModels { SignupViewModel.Factory }
     private val mainViewModel: MainViewModel by viewModels { MainViewModel.Factory }
+
+    private val verifyEmailViewModel: VerifyEmailViewModel by viewModels { VerifyEmailViewModel.Factory }
+
     private val healthViewModel: HealthViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -52,11 +58,28 @@ class MainActivity : ComponentActivity() {
 //                            modifier = Modifier.padding(innerPadding),
 //                        )
                         val user: AuthUser? = currentUser
+                        val email: String? = signupViewModel.registeredEmail?: loginViewModel.notVerifiedEmail
+
                         if (user != null) {
                             HomeScreen(
                                 user = user,
                                 onLogoutClick = { mainViewModel.logout() },
                                 modifier = Modifier.padding(innerPadding),                            )
+                        }
+                        else if (email != null) {
+                            VerifyEmailScreen(
+                                email = email,
+                                state = verifyEmailViewModel.state,
+                                onResendClick = { e: String -> verifyEmailViewModel.resendEmail(e)},
+                                onGoToLoginClick = {
+                                    signupViewModel.backToLogin()
+                                    loginViewModel.backToLogin()
+                                    showSignup = false
+                                    verifyEmailViewModel.reset()
+                                },
+                                modifier = Modifier.padding(innerPadding),
+                            )
+
                         }
                         else if (showSignup) {
                             SignupScreen(

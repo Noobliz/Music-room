@@ -4,7 +4,8 @@ import com.example.musicroom.feature.auth.data.AuthError
 
 fun AuthError.toMessage(): String =
     when (this) {
-        AuthError.EmailTaken -> "Cette adresse e-mail est déjà utilisée."
+        AuthError.EmailNotVerified -> "Cette adresse e-mail n'est pas vérifiée. Merci de la confirmer"
+        AuthError.InvalidOrExpiredLink -> "Ce lien est expiré ou invalide, demande un nouvel email"
         AuthError.UsernameTaken -> "Ce nom d'utilisateur est déjà pris."
         AuthError.InvalidCredentials -> "E-mail ou mot de passe incorrect."
         AuthError.RateLimited -> "Trop de tentatives. Réessaie dans quelques instants."

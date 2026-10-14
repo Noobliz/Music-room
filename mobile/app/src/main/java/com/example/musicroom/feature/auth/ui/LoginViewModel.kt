@@ -13,32 +13,43 @@ import com.example.musicroom.feature.auth.data.AuthRepository
 import com.example.musicroom.feature.auth.data.AuthResult
 import kotlinx.coroutines.launch
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
+import com.example.musicroom.feature.auth.data.AuthError
 import com.example.musicroom.feature.auth.data.AuthResponse
 
 
 class LoginViewModel(
     private val repository: AuthRepository
 ) : ViewModel() {
-    var state by mutableStateOf<AuthUiState>(AuthUiState.Idle)
+    var state: AuthUiState by mutableStateOf<AuthUiState>(AuthUiState.Idle)
         private set
 
-
+    var notVerifiedEmail: String? by mutableStateOf(null)
+        private set
     fun login(
         email: String,
         password: String
     ): Unit {
         if (state is AuthUiState.Loading) return
-
+        val cleanEmail: String = email.trim()
         state = AuthUiState.Loading
         viewModelScope.launch {
-            val res: AuthResult<AuthResponse> = repository.login(email, password)
+            val res: AuthResult<AuthResponse> = repository.login(cleanEmail, password)
             state = when (res) {
                 is AuthResult.Success -> AuthUiState.Success
-                is AuthResult.Failure -> AuthUiState.Failure(res.error)
+                is AuthResult.Failure -> {
+                    if (res.error is AuthError.EmailNotVerified){
+                        notVerifiedEmail = cleanEmail
+                    }
+                    AuthUiState.Failure(res.error)
+                }
             }
 
 
         }
+    }
+    fun  backToLogin() {
+       notVerifiedEmail = null
+        state = AuthUiState.Idle
     }
 
 

@@ -30,14 +30,17 @@ class AuthRepository(
         }
     }
 
-    private suspend fun <T> execute(call: suspend () -> Response<T>): AuthResult<T> {
+    private suspend fun <T> execute(
+        emptyBody: T? = null,
+        call: suspend () -> Response<T>
+    ): AuthResult<T> {
 
         return try {
             val response: Response<T> = call()
             if (response.isSuccessful) {
-                val body: T? = response.body()
-                if (body != null) {
-                    AuthResult.Success(body)
+                val data: T? = response.body() ?: emptyBody
+                if (data != null) {
+                    AuthResult.Success(data)
                 } else AuthResult.Failure(AuthError.Unknown(response.code()))
             } else AuthResult.Failure(parseError(response))
         } catch (e: IOException) {
@@ -52,10 +55,29 @@ class AuthRepository(
         password: String,
         username: String
     ): AuthResult<SignupResponse> =
-        execute { api.signup(SignupRequest(email, password, username)) }
+        execute(
+            null,
+            { api.signup(SignupRequest(email, password, username)) },
+        )
 
     suspend fun login(email: String, password: String): AuthResult<AuthResponse> {
-        val res: AuthResult<AuthResponse> = execute { api.login(LoginRequest(email, password)) }
+        val res: AuthResult<AuthResponse> = execute(
+            null,
+            { api.login(LoginRequest(email, password)) },
+        )
+        if (res is AuthResult.Success) {
+            sessionManager.onAuthenticated(res.data)
+        }
+        return res
+    }
+
+    suspend fun resetPassword(tokenHash: String, password: String): AuthResult<Unit> =
+        execute(emptyBody = Unit, { api.resetPassword(ResetPasswordRequest(tokenHash, password)) })
+
+    suspend fun verifyEmail(tokenHash: String):
+            AuthResult<AuthResponse> {
+        val res: AuthResult<AuthResponse> =
+            execute(null, { api.verifyEmail(VerifyEmailRequest(tokenHash)) })
         if (res is AuthResult.Success) {
             sessionManager.onAuthenticated(res.data)
         }
@@ -63,8 +85,13 @@ class AuthRepository(
     }
 
 
-//    suspend fun refresh(refreshToken: String): AuthResult =
-//        execute { api.refresh(RefreshRequest(refreshToken)) }
+    suspend fun resendEmail(email: String):
+            AuthResult<Unit> =
+        execute(null, { api.resendEmail(ResendEmailRequest(email)) })
+
+    suspend fun forgotPassword(email: String): AuthResult<Unit> =
+        execute(null, { api.forgotPassword(ForgotPasswordRequest(email)) })
+
 
     suspend fun logout() {
         try {

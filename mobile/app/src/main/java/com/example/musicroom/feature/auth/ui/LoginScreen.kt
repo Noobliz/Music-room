@@ -52,11 +52,7 @@ fun LoginScreen(
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary,
         )
-//        Text(
-//            text = "Ravi de te revoir",
-//            style = MaterialTheme.typography.bodyLarge,
-//            color = MaterialTheme.colorScheme.onSurfaceVariant,
-//        )
+
         Spacer(modifier = Modifier.height(32.dp))
 
         Card(
