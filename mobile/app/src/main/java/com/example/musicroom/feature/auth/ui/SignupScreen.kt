@@ -97,8 +97,11 @@ fun SignupScreen(
                     isPassword = true,
                     errorMessage = fieldError(state, "password"),
                 )
-                if (state is AuthUiState.Failure && state.error !is AuthError.Validation) {
-                    ErrorBanner(message = state.error.toMessage())
+                if (state is AuthUiState.Failure) {
+                    val error: AuthError = state.error
+                    if (error !is AuthError.Validation || error.fields.isEmpty()) {
+                        ErrorBanner(message = error.toMessage())
+                    }
                 }
                 PrimaryButton(
                     text = "Créer mon compte",
@@ -113,10 +116,4 @@ fun SignupScreen(
             Text("Déjà un compte ? Se connecter")
         }
     }
-}
-
-private fun fieldError(state: AuthUiState, field: String): String? {
-    val failure: AuthUiState.Failure = state as? AuthUiState.Failure ?: return null
-    val validation: AuthError.Validation = failure.error as? AuthError.Validation ?: return null
-    return validation.fields.firstOrNull { it.field == field }?.message
 }

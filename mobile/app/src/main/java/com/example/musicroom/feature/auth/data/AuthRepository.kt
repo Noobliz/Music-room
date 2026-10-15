@@ -71,8 +71,14 @@ class AuthRepository(
         return res
     }
 
-    suspend fun resetPassword(tokenHash: String, password: String): AuthResult<Unit> =
-        execute(emptyBody = Unit, { api.resetPassword(ResetPasswordRequest(tokenHash, password)) })
+    suspend fun resetPassword(tokenHash: String, password: String): AuthResult<Unit> {
+        val res: AuthResult<Unit> = execute(emptyBody = Unit, { api.resetPassword(ResetPasswordRequest(tokenHash, password)) })
+        // Le serveur ferme toutes les sessions après un reset
+        if (res is AuthResult.Success) {
+            sessionManager.clear()
+        }
+        return res
+    }
 
 
     suspend fun verifyEmail(tokenHash: String):
