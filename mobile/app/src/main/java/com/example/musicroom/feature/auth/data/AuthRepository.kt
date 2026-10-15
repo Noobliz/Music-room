@@ -74,6 +74,7 @@ class AuthRepository(
     suspend fun resetPassword(tokenHash: String, password: String): AuthResult<Unit> =
         execute(emptyBody = Unit, { api.resetPassword(ResetPasswordRequest(tokenHash, password)) })
 
+
     suspend fun verifyEmail(tokenHash: String):
             AuthResult<AuthResponse> {
         val res: AuthResult<AuthResponse> =

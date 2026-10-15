@@ -33,6 +33,7 @@ fun LoginScreen(
     state: AuthUiState,
     onLoginClick: (String, String) -> Unit,
     onGoToSignupClick: () -> Unit,
+    onGoToForgotPasswordClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var email: String by remember { mutableStateOf("") }
@@ -95,6 +96,9 @@ fun LoginScreen(
         }
 
         Spacer(modifier = Modifier.height(16.dp))
+        TextButton(onClick = onGoToForgotPasswordClick) {
+            Text("Mot de passe oublie")
+        }
         TextButton(onClick = onGoToSignupClick) {
             Text("Pas de compte ? S'inscrire")
         }
