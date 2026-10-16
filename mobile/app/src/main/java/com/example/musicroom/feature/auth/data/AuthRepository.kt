@@ -19,50 +19,92 @@ class AuthRepository(
 
     private fun parseError(response: Response<*>): AuthError {
         val raw: String? = response.errorBody()?.string()
-        if (raw == null){
+        if (raw == null) {
             return (AuthError.Unknown(response.code()))
         }
-        return try{
+        return try {
             val res: ErrorResponse = json.decodeFromString<ErrorResponse>(raw)
             res.error.toAuthError(response.code())
-        } catch(e: SerializationException){
+        } catch (e: SerializationException) {
             AuthError.Unknown(response.code())
         }
     }
 
-    private suspend fun execute(call: suspend () -> Response<AuthResponse>): AuthResult {
+    private suspend fun <T> execute(
+        emptyBody: T? = null,
+        call: suspend () -> Response<T>
+    ): AuthResult<T> {
 
         return try {
-            val response = call()
+            val response: Response<T> = call()
             if (response.isSuccessful) {
-                val body = response.body()
-                if (body != null) {
-                    sessionManager.onAuthenticated(body)
-                    AuthResult.Success(body)
-                }
-                else AuthResult.Failure(AuthError.Unknown(response.code()))
-            }
-            else AuthResult.Failure(parseError(response))
-        } catch (e: IOException){
+                val data: T? = response.body() ?: emptyBody
+                if (data != null) {
+                    AuthResult.Success(data)
+                } else AuthResult.Failure(AuthError.Unknown(response.code()))
+            } else AuthResult.Failure(parseError(response))
+        } catch (e: IOException) {
             AuthResult.Failure(AuthError.Network)
-        } catch (e: SerializationException){
+        } catch (e: SerializationException) {
             AuthResult.Failure(AuthError.Unknown(null))
         }
-
     }
 
-    suspend fun signup(email:String, password: String, username: String): AuthResult =
-        execute { api.signup(SignupRequest(email, password, username)) }
-    suspend fun login(email: String, password: String): AuthResult =
-        execute { api.login(LoginRequest(email, password)) }
-//    suspend fun refresh(refreshToken: String): AuthResult =
-//        execute { api.refresh(RefreshRequest(refreshToken)) }
+    suspend fun signup(
+        email: String,
+        password: String,
+        username: String
+    ): AuthResult<SignupResponse> =
+        execute(
+            null,
+            { api.signup(SignupRequest(email, password, username)) },
+        )
 
-    suspend fun logout(){
-        try{
+    suspend fun login(email: String, password: String): AuthResult<AuthResponse> {
+        val res: AuthResult<AuthResponse> = execute(
+            null,
+            { api.login(LoginRequest(email, password)) },
+        )
+        if (res is AuthResult.Success) {
+            sessionManager.onAuthenticated(res.data)
+        }
+        return res
+    }
+
+    suspend fun resetPassword(tokenHash: String, password: String): AuthResult<Unit> {
+        val res: AuthResult<Unit> = execute(emptyBody = Unit, { api.resetPassword(ResetPasswordRequest(tokenHash, password)) })
+        // Le serveur ferme toutes les sessions après un reset
+        if (res is AuthResult.Success) {
+            sessionManager.clear()
+        }
+        return res
+    }
+
+
+    suspend fun verifyEmail(tokenHash: String):
+            AuthResult<AuthResponse> {
+        val res: AuthResult<AuthResponse> =
+            execute(null, { api.verifyEmail(VerifyEmailRequest(tokenHash)) })
+        if (res is AuthResult.Success) {
+            sessionManager.onAuthenticated(res.data)
+        }
+        return res
+    }
+
+
+    suspend fun resendEmail(email: String):
+            AuthResult<Unit> =
+        execute(null, { api.resendEmail(ResendEmailRequest(email)) })
+
+    suspend fun forgotPassword(email: String): AuthResult<Unit> =
+        execute(null, { api.forgotPassword(ForgotPasswordRequest(email)) })
+
+
+    suspend fun logout() {
+        try {
             authenticatedApi.logout()
-        } catch(e: IOException){}
-        finally {
+        } catch (e: IOException) {
+        } finally {
             sessionManager.clear()
         }
     }

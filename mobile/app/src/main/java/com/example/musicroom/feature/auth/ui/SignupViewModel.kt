@@ -12,15 +12,18 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.musicroom.MusicRoomApp
 import com.example.musicroom.feature.auth.data.AuthError
 import com.example.musicroom.feature.auth.data.AuthRepository
+import com.example.musicroom.feature.auth.data.AuthResponse
 import com.example.musicroom.feature.auth.data.AuthResult
 import com.example.musicroom.feature.auth.data.FieldError
+import com.example.musicroom.feature.auth.data.SignupResponse
 import kotlinx.coroutines.launch
 class SignupViewModel(
     private val repository: AuthRepository
 ) : ViewModel() {
     var state: AuthUiState by mutableStateOf<AuthUiState>(AuthUiState.Idle)
         private set
-
+    var registeredEmail: String? by mutableStateOf(null)
+        private set
     fun signup(email: String, password: String, username: String) {
         if (state is AuthUiState.Loading) return
 
@@ -35,13 +38,19 @@ class SignupViewModel(
 
         state = AuthUiState.Loading
         viewModelScope.launch {
-            state = when (val res: AuthResult = repository.signup(cleanEmail, password, cleanUsername)) {
-                is AuthResult.Success -> AuthUiState.Success
+            state = when (val res: AuthResult<SignupResponse> = repository.signup(cleanEmail, password, cleanUsername)) {
+                is AuthResult.Success -> {
+                    registeredEmail = cleanEmail
+                    AuthUiState.Success
+                }
                 is AuthResult.Failure -> AuthUiState.Failure(res.error)
             }
         }
     }
-
+    fun  backToLogin() {
+        registeredEmail = null
+        state = AuthUiState.Idle
+    }
     companion object {
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {

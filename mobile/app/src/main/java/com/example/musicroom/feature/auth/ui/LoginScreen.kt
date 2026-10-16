@@ -33,6 +33,7 @@ fun LoginScreen(
     state: AuthUiState,
     onLoginClick: (String, String) -> Unit,
     onGoToSignupClick: () -> Unit,
+    onGoToForgotPasswordClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var email: String by remember { mutableStateOf("") }
@@ -52,11 +53,7 @@ fun LoginScreen(
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary,
         )
-//        Text(
-//            text = "Ravi de te revoir",
-//            style = MaterialTheme.typography.bodyLarge,
-//            color = MaterialTheme.colorScheme.onSurfaceVariant,
-//        )
+
         Spacer(modifier = Modifier.height(32.dp))
 
         Card(
@@ -99,6 +96,9 @@ fun LoginScreen(
         }
 
         Spacer(modifier = Modifier.height(16.dp))
+        TextButton(onClick = onGoToForgotPasswordClick) {
+            Text("Mot de passe oublie")
+        }
         TextButton(onClick = onGoToSignupClick) {
             Text("Pas de compte ? S'inscrire")
         }

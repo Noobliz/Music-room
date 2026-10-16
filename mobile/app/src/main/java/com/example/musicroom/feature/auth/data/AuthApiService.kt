@@ -11,7 +11,7 @@ interface AuthApiService {
     suspend fun checkServerHealth(): Response<HealthResponse>
 
     @POST("auth/signup")
-    suspend fun signup(@Body request: SignupRequest): Response<AuthResponse>
+    suspend fun signup(@Body request: SignupRequest): Response<SignupResponse>
 
     @POST("auth/login")
     suspend fun login(@Body request: LoginRequest): Response<AuthResponse>
@@ -27,4 +27,16 @@ interface AuthApiService {
 
     @POST("auth/logout")
     suspend fun logout(): Response<Unit>
+
+    @POST("auth/email/verify")
+    suspend fun verifyEmail(@Body request: VerifyEmailRequest): Response<AuthResponse>
+
+    @POST("auth/email/resend")
+    suspend fun resendEmail(@Body request: ResendEmailRequest): Response<Unit>
+
+    @POST("auth/password/forgot")
+    suspend fun forgotPassword(@Body request: ForgotPasswordRequest): Response<Unit>
+
+    @POST("auth/password/reset")
+    suspend fun resetPassword(@Body request: ResetPasswordRequest): Response<Unit>
 }

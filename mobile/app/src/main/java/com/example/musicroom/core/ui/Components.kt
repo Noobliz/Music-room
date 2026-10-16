@@ -2,7 +2,7 @@ package com.example.musicroom.core.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardOptions
@@ -21,6 +21,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
@@ -86,7 +87,7 @@ fun PrimaryButton(
         shape = MaterialTheme.shapes.medium,
         modifier = modifier
             .fillMaxWidth()
-            .height(52.dp),
+            .heightIn(min = 52.dp),
     ) {
         if (loading) {
             CircularProgressIndicator(
@@ -95,7 +96,7 @@ fun PrimaryButton(
                 color = MaterialTheme.colorScheme.onPrimary,
             )
         } else {
-            Text(text = text, style = MaterialTheme.typography.titleMedium)
+            Text(text = text, style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
         }
     }
 }
