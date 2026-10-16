@@ -1,0 +1,27 @@
+meta {
+  name: Link Google
+  type: http
+  seq: 13
+}
+
+post {
+  url: {{baseUrl}}/auth/identities/google
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{accessToken}}
+}
+
+body:json {
+  {
+    "idToken": "{{googleIdToken}}"
+  }
+}
+
+tests {
+  test("returns HTTP 200", () => {
+    expect(res.status).to.equal(200);
+  });
+}

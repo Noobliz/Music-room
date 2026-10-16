@@ -10,6 +10,7 @@ ENV_FILE="$REPOSITORY_ROOT/.env"
 SUPABASE_CONFIG_FILE="$BACKEND_ROOT/supabase/config.toml"
 BRUNO_COLLECTION_FILE="$BACKEND_ROOT/bruno/collection.bru"
 BRUNO_LOCAL_ENV_FILE="$BACKEND_ROOT/bruno/environments/local.bru"
+SUPABASE_ENV_FILE="$BACKEND_ROOT/supabase/.env"
 
 if [ ! -f "$ENV_FILE" ]; then
   echo "Missing .env file at repository root. Copy .env.example to .env first." >&2
@@ -98,3 +99,5 @@ update_toml_key "auth" "additional_redirect_urls" "[\"http://127.0.0.1:${API_POR
 
 update_bru_var "API_PORT" "$API_PORT" "$BRUNO_COLLECTION_FILE"
 update_bru_var "API_PORT" "$API_PORT" "$BRUNO_LOCAL_ENV_FILE"
+
+printf "%s\n" "SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID=${SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID:-}" > "$SUPABASE_ENV_FILE"

@@ -5,10 +5,12 @@ import {
   isAuthApiError,
   type Session as SupabaseSession,
   type User as SupabaseUser,
+  type UserIdentity,
 } from '@supabase/supabase-js';
 
 import { appConfig } from '../config.js';
 import { AppError } from '../errors/app-error.js';
+import { requestAsUser } from '../lib/gotrue.js';
 import { createSupabaseClient } from '../lib/supabase.js';
 import { findProfileById, findProfileByUsername } from '../models/profile.model.js';
 import { type AuthContext } from './token.service.js';
@@ -17,7 +19,12 @@ import {
   type AuthUser,
   type EmailBody,
   type EmailLinkQuery,
+  type IdentitiesResponse,
+  type Identity,
+  type IdTokenBody,
   type LoginBody,
+  type OAuthAuthResponse,
+  type OAuthProviderParams,
   type RefreshBody,
   type ResetPasswordBody,
   type Session,
@@ -34,6 +41,7 @@ const INVALID_REFRESH_TOKEN_CODES = new Set([
   'session_expired',
 ]);
 const RATE_LIMIT_CODES = new Set(['over_request_rate_limit', 'over_email_send_rate_limit']);
+const CLOCK_SKEW_MS = 1_000;
 
 const toCommonAppError = (error: unknown): AppError | undefined => {
   if (!isAuthApiError(error)) {
@@ -55,6 +63,24 @@ const toLinkAppError = (error: unknown): unknown => {
   }
   if (isAuthApiError(error) && error.status >= 400 && error.status < 500) {
     return new AppError(400, 'INVALID_OR_EXPIRED_LINK', 'Link is invalid, expired or already used');
+  }
+  return error;
+};
+
+const toIdTokenAppError = (error: unknown): unknown => {
+  const appError = toCommonAppError(error);
+  if (appError) {
+    return appError;
+  }
+  if (isAuthApiError(error) && error.code === 'identity_already_exists') {
+    return new AppError(
+      409,
+      'IDENTITY_ALREADY_LINKED',
+      'This social account is already linked to an account',
+    );
+  }
+  if (isAuthApiError(error) && error.status >= 400 && error.status < 500) {
+    return new AppError(401, 'INVALID_ID_TOKEN', 'ID token is invalid or expired');
   }
   return error;
 };
@@ -240,4 +266,102 @@ export const logOut = async (accessToken: string): Promise<void> => {
 
 export const getCurrentUser = async ({ userId, email }: AuthContext): Promise<AuthUser> => {
   return buildAuthUser(userId, email);
+};
+
+const isCreatedSince = (user: SupabaseUser, startedAt: number): boolean =>
+  Date.parse(user.created_at) >= startedAt - CLOCK_SKEW_MS;
+
+export const signInWithProvider = async (
+  { provider }: OAuthProviderParams,
+  { idToken, nonce }: IdTokenBody,
+): Promise<OAuthAuthResponse> => {
+  const startedAt = Date.now();
+  const { data, error } = await createSupabaseClient().auth.signInWithIdToken({
+    provider,
+    token: idToken,
+    nonce,
+  });
+
+  if (error) {
+    throw toIdTokenAppError(error);
+  }
+
+  const response = await toAuthResponse(data.user, data.session);
+  return { ...response, isNewUser: isCreatedSince(data.user, startedAt) };
+};
+
+const toIdentity = (identity: UserIdentity): Identity => ({
+  id: identity.identity_id,
+  provider: identity.provider,
+  email: typeof identity.identity_data?.email === 'string' ? identity.identity_data.email : null,
+  createdAt: identity.created_at ?? null,
+});
+
+const fetchIdentities = async (accessToken: string): Promise<UserIdentity[]> => {
+  const { data, error } = await createSupabaseClient().auth.getUser(accessToken);
+
+  if (error) {
+    if (isAuthApiError(error) && (error.status === 401 || error.status === 403)) {
+      throw new AppError(401, 'TOKEN_INVALID', 'Access token is invalid or expired');
+    }
+    throw error;
+  }
+
+  return data.user.identities ?? [];
+};
+
+export const listIdentities = async ({ accessToken }: AuthContext): Promise<IdentitiesResponse> => {
+  const identities = await fetchIdentities(accessToken);
+  return { identities: identities.map(toIdentity) };
+};
+
+export const linkIdentity = async (
+  auth: AuthContext,
+  { provider }: OAuthProviderParams,
+  { idToken, nonce }: IdTokenBody,
+): Promise<IdentitiesResponse> => {
+  let linkedSession: { access_token?: string } | undefined;
+  try {
+    linkedSession = await requestAsUser<{ access_token?: string }>(
+      auth.accessToken,
+      'POST',
+      '/token?grant_type=id_token',
+      { provider, id_token: idToken, nonce, link_identity: true },
+    );
+  } catch (error) {
+    throw toIdTokenAppError(error);
+  }
+
+  if (linkedSession?.access_token) {
+    await createSupabaseClient().auth.admin.signOut(linkedSession.access_token, 'local');
+  }
+
+  return listIdentities(auth);
+};
+
+export const unlinkIdentity = async (
+  { accessToken }: AuthContext,
+  { provider }: OAuthProviderParams,
+): Promise<void> => {
+  const identities = await fetchIdentities(accessToken);
+  const identity = identities.find((candidate) => candidate.provider === provider);
+
+  if (!identity) {
+    throw new AppError(404, 'IDENTITY_NOT_FOUND', `No ${provider} account is linked`);
+  }
+  if (identities.length < 2) {
+    throw new AppError(409, 'LAST_IDENTITY', 'Cannot unlink the last login method');
+  }
+
+  try {
+    await requestAsUser(accessToken, 'DELETE', `/user/identities/${identity.identity_id}`);
+  } catch (error) {
+    if (isAuthApiError(error) && error.code === 'single_identity_not_deletable') {
+      throw new AppError(409, 'LAST_IDENTITY', 'Cannot unlink the last login method');
+    }
+    if (isAuthApiError(error) && error.code === 'email_conflict_identity_not_deletable') {
+      throw new AppError(409, 'IDENTITY_NOT_DELETABLE', error.message);
+    }
+    throw toCommonAppError(error) ?? error;
+  }
 };

@@ -3,7 +3,9 @@ import { type FastifyReply, type FastifyRequest } from 'fastify';
 import {
   type EmailBody,
   type EmailLinkQuery,
+  type IdTokenBody,
   type LoginBody,
+  type OAuthProviderParams,
   type RefreshBody,
   type ResetPasswordBody,
   type SignupBody,
@@ -73,4 +75,28 @@ export const logOut = async (request: FastifyRequest, reply: FastifyReply) => {
 
 export const getMe = async (request: FastifyRequest) => {
   return authService.getCurrentUser(request.auth);
+};
+
+export const signInWithProvider = async (
+  request: FastifyRequest<{ Params: OAuthProviderParams; Body: IdTokenBody }>,
+) => {
+  return authService.signInWithProvider(request.params, request.body);
+};
+
+export const listIdentities = async (request: FastifyRequest) => {
+  return authService.listIdentities(request.auth);
+};
+
+export const linkIdentity = async (
+  request: FastifyRequest<{ Params: OAuthProviderParams; Body: IdTokenBody }>,
+) => {
+  return authService.linkIdentity(request.auth, request.params, request.body);
+};
+
+export const unlinkIdentity = async (
+  request: FastifyRequest<{ Params: OAuthProviderParams }>,
+  reply: FastifyReply,
+) => {
+  await authService.unlinkIdentity(request.auth, request.params);
+  return reply.status(204).send();
 };

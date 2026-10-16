@@ -203,5 +203,7 @@ ensure-env:
 			printf "%s\n" "SUPABASE_PUBLISHABLE_KEY=sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH"; \
 			printf "%s\n" ""; \
 			printf "%s\n" "APP_DEEP_LINK_URL=musicroom://auth"; \
+			printf "%s\n" ""; \
+			printf "%s\n" "SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID="; \
 		} > "$(ENV_FILE)"; \
 	fi
