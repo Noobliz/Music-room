@@ -12,4 +12,10 @@ fun AuthError.toMessage(): String =
         is AuthError.Validation -> "Certains champs sont invalides."
         AuthError.Network -> "Impossible de joindre le serveur."
         is AuthError.Unknown -> "Une erreur est survenue. Réessaie plus tard."
+        AuthError.InvalidIdToken -> "La connexion Google a échoué."
+        AuthError.IdentityAlreadyLinked -> "Ce compte Google est déjà utilisé par un autre compte."
+        AuthError.LastIdentity -> "Impossible de délier Google : c'est ton seul moyen de connexion."
+        AuthError.IdentityNotFound -> "Aucun compte Google n'est lié."
+        AuthError.IdentityNotDeletable -> "Ce moyen de connexion ne peut pas être supprimé."
+        AuthError.NoGoogleAccount -> "Aucun compte Google sur cet appareil."
     }

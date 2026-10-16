@@ -4,6 +4,20 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization") version "2.2.10"
 }
 
+// Le .env racine (git-ignoré) est lu sur le PC au moment de la compilation.
+val envFile: File = rootProject.projectDir.parentFile.resolve(".env")
+if (!envFile.exists()) {
+    error("Fichier .env introuvable (${envFile.path}). Copier .env.example en .env à la racine du repo.")
+}
+val env: Map<String, String> = envFile.readLines()
+    .map { line: String -> line.trim() }
+    .filter { line: String -> line.isNotBlank() && !line.startsWith("#") && line.contains("=") }
+    .associate { line: String -> line.substringBefore("=").trim() to line.substringAfter("=").trim() }
+
+val googleWebClientId: String = env["SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID"]
+    ?.takeIf { value: String -> value.endsWith(".apps.googleusercontent.com") }
+    ?: error("SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID absent ou invalide dans .env (client ID Web Google attendu).")
+
 android {
     namespace = "com.example.musicroom"
     compileSdk {
@@ -19,6 +33,7 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:3000/\"")
+        buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"$googleWebClientId\"")
     }
 
     buildTypes {
@@ -59,4 +74,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
     implementation("androidx.security:security-crypto:1.1.0")
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
+    implementation(libs.googleid)
 }

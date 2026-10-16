@@ -17,10 +17,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.lifecycle.lifecycleScope
 import com.example.musicroom.core.ui.gradientBackground
 import com.example.musicroom.core.permission.LocalNetworkPermissionGate
 import com.example.musicroom.feature.auth.data.AuthDeepLink
 import com.example.musicroom.feature.auth.data.AuthUser
+import com.example.musicroom.feature.auth.data.GoogleCredentialProvider
+import com.example.musicroom.feature.auth.data.GoogleCredentialResult
 import com.example.musicroom.feature.auth.data.parseAuthDeepLink
 import com.example.musicroom.feature.auth.ui.ConfirmEmailScreen
 import com.example.musicroom.feature.auth.ui.ConfirmEmailViewModel
@@ -38,6 +41,7 @@ import com.example.musicroom.feature.auth.ui.VerifyEmailScreen
 import com.example.musicroom.feature.auth.ui.VerifyEmailViewModel
 import com.example.musicroom.feature.home.ui.HomeScreen
 import com.example.musicroom.ui.theme.MusicroomTheme
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     private val loginViewModel: LoginViewModel by viewModels { LoginViewModel.Factory }
@@ -51,6 +55,8 @@ class MainActivity : ComponentActivity() {
     private val confirmEmailViewModel: ConfirmEmailViewModel by viewModels { ConfirmEmailViewModel.Factory }
 
     private val resetPasswordViewModel: ResetPasswordViewModel by viewModels { ResetPasswordViewModel.Factory }
+
+    private val googleCredentialProvider: GoogleCredentialProvider = GoogleCredentialProvider()
     private val healthViewModel: HealthViewModel by viewModels()
 
 
@@ -175,6 +181,13 @@ class MainActivity : ComponentActivity() {
                                 onGoToForgotPasswordClick = {showForgotPassword = true},
                                 onLoginClick = { e: String, p: String -> loginViewModel.login(e, p) },
                                 onGoToSignupClick = { showSignup = true },
+                                onGoogleClick = {
+                                    lifecycleScope.launch {
+                                        val result: GoogleCredentialResult =
+                                            googleCredentialProvider.requestIdToken(this@MainActivity)
+                                        loginViewModel.signInWithGoogle(result)
+                                    }
+                                },
                                 modifier = Modifier.padding(innerPadding),
                             )
                         }
