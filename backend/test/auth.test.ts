@@ -25,7 +25,7 @@ const mailpitUrl = `http://127.0.0.1:${process.env.SUPABASE_INBUCKET_PORT ?? '54
 const waitForTokenHash = async (
   email: string,
   type: 'email' | 'recovery',
-  except?: string,
+  except: string[] = [],
 ): Promise<string> => {
   const pattern = new RegExp(`token_hash=([^&"]+)&(?:amp;)?type=${type}`);
   for (let attempt = 0; attempt < 40; attempt += 1) {
@@ -36,7 +36,7 @@ const waitForTokenHash = async (
     for (const { ID } of messages as { ID: string }[]) {
       const message = await fetch(`${mailpitUrl}/api/v1/message/${ID}`);
       const tokenHash = (await message.json()).HTML.match(pattern)?.[1];
-      if (tokenHash && tokenHash !== except) {
+      if (tokenHash && !except.includes(tokenHash)) {
         return tokenHash;
       }
     }
@@ -199,7 +199,7 @@ describe('auth', () => {
     expect(expired.json().error.code).toBe('INVALID_OR_EXPIRED_LINK');
 
     expect((await forgot()).statusCode).toBe(202);
-    const tokenHash = await waitForTokenHash(credentials.email, 'recovery', expiredToken);
+    const tokenHash = await waitForTokenHash(credentials.email, 'recovery', [expiredToken]);
     expect((await reset(tokenHash)).statusCode).toBe(204);
 
     const reused = await reset(tokenHash);
@@ -212,6 +212,13 @@ describe('auth', () => {
       payload: { email: credentials.email, password: 'NewPassword123!' },
     });
     expect(login.statusCode).toBe(200);
+
+    expect((await forgot()).statusCode).toBe(202);
+    const samePasswordToken = await waitForTokenHash(credentials.email, 'recovery', [
+      expiredToken,
+      tokenHash,
+    ]);
+    expect((await reset(samePasswordToken)).statusCode).toBe(204);
   });
 
   it('documents the auth routes', async () => {
