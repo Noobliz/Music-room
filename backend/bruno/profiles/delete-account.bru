@@ -1,0 +1,21 @@
+meta {
+  name: Delete my account
+  type: http
+  seq: 6
+}
+
+delete {
+  url: {{baseUrl}}/profiles/me
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{accessToken}}
+}
+
+tests {
+  test("returns HTTP 204", () => {
+    expect(res.status).to.equal(204);
+  });
+}
