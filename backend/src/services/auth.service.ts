@@ -202,7 +202,7 @@ export const resetPassword = async ({ tokenHash, password }: ResetPasswordBody):
   }
 
   const { error: updateError } = await client.auth.updateUser({ password });
-  if (updateError) {
+  if (updateError && !(isAuthApiError(updateError) && updateError.code === 'same_password')) {
     throw toCommonAppError(updateError) ?? updateError;
   }
 
