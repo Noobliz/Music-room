@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
+import { isUniqueViolation } from '../db/errors.js';
 import { type Profile } from '../db/schema.js';
 import { AppError } from '../errors/app-error.js';
 import { createSupabaseClient, createSupabaseClientAsUser } from '../lib/supabase.js';
@@ -46,11 +47,6 @@ const PROFILE_FIELD_VISIBILITY = {
 } as const satisfies Partial<Record<keyof Profile, 'public' | 'friends'>>;
 
 type VisibleField = keyof typeof PROFILE_FIELD_VISIBILITY;
-
-const isUniqueViolation = (error: unknown): boolean => {
-  const candidate = error as { code?: string; cause?: { code?: string } } | null;
-  return candidate?.code === '23505' || candidate?.cause?.code === '23505';
-};
 
 const requireProfile = (profile: Profile | undefined, id: string): Profile => {
   if (!profile) {

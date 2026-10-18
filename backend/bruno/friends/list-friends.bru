@@ -1,0 +1,21 @@
+meta {
+  name: List my friends
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/friends
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{accessToken}}
+}
+
+tests {
+  test("returns HTTP 200", () => {
+    expect(res.status).to.equal(200);
+  });
+}
