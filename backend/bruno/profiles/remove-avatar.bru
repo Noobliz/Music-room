@@ -1,0 +1,21 @@
+meta {
+  name: Remove avatar
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{baseUrl}}/profiles/me/avatar
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{accessToken}}
+}
+
+tests {
+  test("returns HTTP 204", () => {
+    expect(res.status).to.equal(204);
+  });
+}

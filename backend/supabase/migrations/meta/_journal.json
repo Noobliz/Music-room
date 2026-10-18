@@ -15,6 +15,27 @@
       "when": 1790885642123,
       "tag": "20261001201402_profiles_auth_triggers",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792268845420,
+      "tag": "20261017202725_avatars_storage",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792334435064,
+      "tag": "20261018144035_create_friendships",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792334440072,
+      "tag": "20261018144040_friendships_functions",
+      "breakpoints": true
     }
   ]
 }
