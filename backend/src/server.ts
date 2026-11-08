@@ -10,6 +10,7 @@ import {
 import { authenticatePlugin } from './plugins/authenticate.plugin.js';
 import { errorHandlerPlugin } from './plugins/error-handler.plugin.js';
 import { authRoutes } from './routes/auth.routes.js';
+import { friendRoutes } from './routes/friends.routes.js';
 import { healthRoutes } from './routes/health.routes.js';
 import { profileRoutes } from './routes/profiles.routes.js';
 
@@ -37,6 +38,10 @@ export const buildServer = async () => {
           name: 'profiles',
           description: 'User profiles, avatar and account deletion',
         },
+        {
+          name: 'friends',
+          description: 'Friend requests, friends list and user search',
+        },
       ],
       components: {
         securitySchemes: {
@@ -57,6 +62,7 @@ export const buildServer = async () => {
   await server.register(healthRoutes);
   await server.register(authRoutes, { prefix: '/auth' });
   await server.register(profileRoutes, { prefix: '/profiles' });
+  await server.register(friendRoutes, { prefix: '/friends' });
 
   return server;
 };

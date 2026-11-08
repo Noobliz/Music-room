@@ -1,0 +1,27 @@
+meta {
+  name: Search users
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/friends/search?q={{friendUsername}}
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{accessToken}}
+}
+
+script:post-response {
+  if (res.status === 200 && res.body.length > 0) {
+    bru.setVar("friendUserId", res.body[0].id);
+  }
+}
+
+tests {
+  test("returns HTTP 200", () => {
+    expect(res.status).to.equal(200);
+  });
+}
