@@ -1,0 +1,27 @@
+meta {
+  name: Update my profile
+  type: http
+  seq: 2
+}
+
+patch {
+  url: {{baseUrl}}/profiles/me
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{accessToken}}
+}
+
+body:json {
+  {
+    "bio": "Hello from Bruno"
+  }
+}
+
+tests {
+  test("returns HTTP 200", () => {
+    expect(res.status).to.equal(200);
+  });
+}

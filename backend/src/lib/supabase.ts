@@ -10,3 +10,13 @@ export const createSupabaseClient = (): SupabaseClient =>
       detectSessionInUrl: false,
     },
   });
+
+export const createSupabaseClientAsUser = (accessToken: string): SupabaseClient =>
+  createClient(appConfig.supabase.url, appConfig.supabase.publishableKey, {
+    global: { headers: { Authorization: `Bearer ${accessToken}` } },
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+    },
+  });

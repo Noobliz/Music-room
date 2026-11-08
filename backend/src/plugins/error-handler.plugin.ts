@@ -3,7 +3,13 @@ import fp from 'fastify-plugin';
 import { hasZodFastifySchemaValidationErrors } from 'fastify-type-provider-zod';
 
 import { AppError } from '../errors/app-error.js';
+import { type ErrorCode } from '../errors/error-codes.js';
 import { type ErrorResponse } from '../schemas/error.schema.js';
+
+const CLIENT_ERROR_CODES: Partial<Record<number, ErrorCode>> = {
+  413: 'PAYLOAD_TOO_LARGE',
+  415: 'UNSUPPORTED_MEDIA_TYPE',
+};
 
 const isFastifyClientError = (error: unknown): error is FastifyError & { statusCode: number } =>
   error instanceof Error &&
@@ -35,7 +41,8 @@ export const errorHandlerPlugin = fp(
       }
 
       if (isFastifyClientError(error)) {
-        const body: ErrorResponse = { error: { code: 'BAD_REQUEST', message: error.message } };
+        const code = CLIENT_ERROR_CODES[error.statusCode] ?? 'BAD_REQUEST';
+        const body: ErrorResponse = { error: { code, message: error.message } };
         return reply.status(error.statusCode).send(body);
       }
 
