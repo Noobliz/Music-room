@@ -2,6 +2,7 @@ import { and, asc, desc, eq, ilike, ne, or, sql } from 'drizzle-orm';
 import { type AnyPgColumn } from 'drizzle-orm/pg-core';
 
 import { db } from '../db/client.js';
+import { escapeLikePattern } from '../lib/sql.js';
 import { friendships, profiles, type Friendship } from '../db/schema.js';
 
 export type FriendshipStatus = Friendship['status'];
@@ -30,8 +31,6 @@ const betweenUsers = (a: string, b: string | AnyPgColumn) =>
 
 const involvesUser = (userId: string) =>
   or(eq(friendships.requesterId, userId), eq(friendships.addresseeId, userId));
-
-const escapeLikePattern = (value: string): string => value.replace(/[\\%_]/g, '\\$&');
 
 export const findFriendshipBetween = async (
   a: string,
