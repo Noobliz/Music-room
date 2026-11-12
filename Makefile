@@ -4,7 +4,7 @@ SHELL := /bin/sh
 .PHONY: help banner install backend mobile clean fclean re \
         backend-setup backend-start backend-stop backend-reset backend-test backend-studio backend-mail \
         backend-catalog catalog \
-        mobile-start mobile-stop mobile-reset \
+        mobile-start mobile-stop mobile-reset mobile-reverse reverse \
         env-sync doc ensure-env
 .SILENT:
 
@@ -13,6 +13,7 @@ MOBILE_DIR := mobile
 PROJECT_NAME := music-room
 MOBILE_APP_ID := com.example.music_room
 ENV_FILE := .env
+SUPABASE_API_PORT := $(or $(shell grep -m1 '^SUPABASE_API_PORT=' $(ENV_FILE) 2>/dev/null | cut -d= -f2),54321)
 
 define run
 	tmp_file=$$(mktemp); \
@@ -64,6 +65,7 @@ help: banner
 	printf "  make mobile start       Install and launch on a connected device/emulator\n"
 	printf "  make mobile stop        Stop the app on the device\n"
 	printf "  make mobile reset       Clean, rebuild, and launch on device\n"
+	printf "  make mobile reverse     Let the device reach local Supabase files (adb reverse)\n"
 	printf "\n"
 	printf "  make env sync           Sync .env into Supabase and Bruno configs\n"
 	printf "  make doc                Open the API documentation (Swagger UI)\n"
@@ -141,6 +143,7 @@ test: backend-test
 studio: backend-studio
 mail: backend-mail
 catalog: backend-catalog
+reverse: mobile-reverse
 
 mobile: banner
 
@@ -149,8 +152,12 @@ mobile-build:
 
 mobile-start:
 	$(call run,Building and installing on device,cd "$(MOBILE_DIR)" && ./gradlew installDebug)
+	$(MAKE) --no-print-directory mobile-reverse
 	printf "\n  [ APP ] Launching on device\n\n"
 	adb shell am start -n "$(MOBILE_APP_ID)/.MainActivity"
+
+mobile-reverse:
+	$(call run,Forwarding device port $(SUPABASE_API_PORT) to local Supabase,adb reverse tcp:$(SUPABASE_API_PORT) tcp:$(SUPABASE_API_PORT))
 
 mobile-stop:
 	$(call run,Stopping app on device,adb shell am force-stop "$(MOBILE_APP_ID)")
@@ -158,6 +165,7 @@ mobile-stop:
 mobile-reset:
 	$(call run,Cleaning mobile build,cd "$(MOBILE_DIR)" && ./gradlew clean)
 	$(call run,Rebuilding and installing on device,cd "$(MOBILE_DIR)" && ./gradlew installDebug)
+	$(MAKE) --no-print-directory mobile-reverse
 	printf "\n  [ APP ] Launching on device\n\n"
 	adb shell am start -n "$(MOBILE_APP_ID)/.MainActivity"
 
