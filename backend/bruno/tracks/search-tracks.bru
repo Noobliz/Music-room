@@ -1,0 +1,32 @@
+meta {
+  name: Search tracks
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/tracks?limit=20&offset=0
+  body: none
+  auth: none
+}
+
+params:query {
+  limit: 20
+  offset: 0
+}
+
+headers {
+  Authorization: Bearer {{accessToken}}
+}
+
+script:post-response {
+  if (res.status === 200 && res.body.items.length > 0) {
+    bru.setVar("trackId", res.body.items[0].id);
+  }
+}
+
+tests {
+  test("returns HTTP 200", () => {
+    expect(res.status).to.equal(200);
+  });
+}
