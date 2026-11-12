@@ -52,7 +52,6 @@ type Cover = { data: Uint8Array; contentType: CoverContentType };
 type Storage = SupabaseClient['storage'];
 
 export type CatalogImportReport = {
-  directoryFound: boolean;
   imported: string[];
   updated: string[];
   failed: { file: string; reason: string }[];
@@ -176,23 +175,8 @@ const importTrack = async (
 };
 
 export const importCatalog = async (directory: string): Promise<CatalogImportReport> => {
-  const report: CatalogImportReport = {
-    directoryFound: true,
-    imported: [],
-    updated: [],
-    failed: [],
-  };
-
-  let files: string[];
-  try {
-    files = (await readdir(directory)).sort();
-  } catch (error) {
-    if (isMissing(error)) {
-      return { ...report, directoryFound: false };
-    }
-    throw error;
-  }
-
+  const report: CatalogImportReport = { imported: [], updated: [], failed: [] };
+  const files = (await readdir(directory)).sort();
   const manifest = await readManifest(directory);
   const storage = createSupabaseAdminClient().storage;
   const audioFiles = files.filter((file) => extname(file).toLowerCase() === '.mp3');
