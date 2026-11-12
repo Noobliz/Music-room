@@ -65,7 +65,7 @@ help: banner
 	printf "  make mobile start       Install and launch on a connected device/emulator\n"
 	printf "  make mobile stop        Stop the app on the device\n"
 	printf "  make mobile reset       Clean, rebuild, and launch on device\n"
-	printf "  make mobile reverse     Let the device reach local Supabase files (adb reverse)\n"
+	printf "  make mobile reverse     Forward the Supabase port to the device again (adb reverse)\n"
 	printf "\n"
 	printf "  make env sync           Sync .env into Supabase and Bruno configs\n"
 	printf "  make doc                Open the API documentation (Swagger UI)\n"
@@ -152,7 +152,6 @@ mobile-build:
 
 mobile-start:
 	$(call run,Building and installing on device,cd "$(MOBILE_DIR)" && ./gradlew installDebug)
-	$(MAKE) --no-print-directory mobile-reverse
 	printf "\n  [ APP ] Launching on device\n\n"
 	adb shell am start -n "$(MOBILE_APP_ID)/.MainActivity"
 
@@ -165,7 +164,6 @@ mobile-stop:
 mobile-reset:
 	$(call run,Cleaning mobile build,cd "$(MOBILE_DIR)" && ./gradlew clean)
 	$(call run,Rebuilding and installing on device,cd "$(MOBILE_DIR)" && ./gradlew installDebug)
-	$(MAKE) --no-print-directory mobile-reverse
 	printf "\n  [ APP ] Launching on device\n\n"
 	adb shell am start -n "$(MOBILE_APP_ID)/.MainActivity"
 
