@@ -13,6 +13,7 @@ import { authRoutes } from './routes/auth.routes.js';
 import { friendRoutes } from './routes/friends.routes.js';
 import { healthRoutes } from './routes/health.routes.js';
 import { profileRoutes } from './routes/profiles.routes.js';
+import { spaceRoutes } from './routes/spaces.routes.js';
 import { trackRoutes } from './routes/tracks.routes.js';
 
 export const buildServer = async () => {
@@ -47,6 +48,11 @@ export const buildServer = async () => {
           name: 'tracks',
           description: 'Music catalog: search, track details and audio streaming',
         },
+        {
+          name: 'spaces',
+          description:
+            'Events and playlists shared by Track Vote and Playlist Editor: visibility, access mode and invitations',
+        },
       ],
       components: {
         securitySchemes: {
@@ -69,6 +75,7 @@ export const buildServer = async () => {
   await server.register(profileRoutes, { prefix: '/profiles' });
   await server.register(friendRoutes, { prefix: '/friends' });
   await server.register(trackRoutes, { prefix: '/tracks' });
+  await server.register(spaceRoutes, { prefix: '/spaces' });
 
   return server;
 };
