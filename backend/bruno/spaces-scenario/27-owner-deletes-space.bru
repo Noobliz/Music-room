@@ -1,0 +1,21 @@
+meta {
+  name: Owner deletes the space
+  type: http
+  seq: 27
+}
+
+delete {
+  url: {{baseUrl}}/spaces/{{spaceId}}
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{ownerToken}}
+}
+
+tests {
+  test("returns HTTP 204", () => {
+    expect(res.status).to.equal(204);
+  });
+}

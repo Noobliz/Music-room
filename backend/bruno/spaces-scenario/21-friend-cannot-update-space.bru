@@ -1,0 +1,31 @@
+meta {
+  name: Invited friend cannot update the space
+  type: http
+  seq: 21
+}
+
+patch {
+  url: {{baseUrl}}/spaces/{{spaceId}}
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{friendToken}}
+}
+
+body:json {
+  {
+    "name": "Mine now"
+  }
+}
+
+tests {
+  test("returns HTTP 403", () => {
+    expect(res.status).to.equal(403);
+  });
+
+  test("returns NOT_SPACE_OWNER", () => {
+    expect(res.body.error.code).to.equal("NOT_SPACE_OWNER");
+  });
+}

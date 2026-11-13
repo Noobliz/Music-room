@@ -1,0 +1,27 @@
+meta {
+  name: Reset - owner cancels a pending friend request
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{baseUrl}}/friends/requests/{{friendRequestId}}
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{ownerToken}}
+}
+
+script:pre-request {
+  if (!bru.getVar("friendRequestId")) {
+    bru.runner.skipRequest();
+  }
+}
+
+tests {
+  test("returns HTTP 204", () => {
+    expect(res.status).to.equal(204);
+  });
+}

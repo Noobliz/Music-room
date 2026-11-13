@@ -1,0 +1,26 @@
+meta {
+  name: Friend opens and can act in the public space
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{baseUrl}}/spaces/{{spaceId}}
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{friendToken}}
+}
+
+tests {
+  test("returns HTTP 200", () => {
+    expect(res.status).to.equal(200);
+  });
+
+  test("can act without being invited", () => {
+    expect(res.body.myRole).to.equal("none");
+    expect(res.body.canAct).to.equal(true);
+  });
+}

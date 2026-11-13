@@ -1,0 +1,21 @@
+meta {
+  name: Delete a space
+  type: http
+  seq: 9
+}
+
+delete {
+  url: {{baseUrl}}/spaces/{{spaceId}}
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{accessToken}}
+}
+
+tests {
+  test("returns HTTP 204", () => {
+    expect(res.status).to.equal(204);
+  });
+}

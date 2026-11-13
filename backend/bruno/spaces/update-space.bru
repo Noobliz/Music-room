@@ -1,0 +1,28 @@
+meta {
+  name: Update a space
+  type: http
+  seq: 5
+}
+
+patch {
+  url: {{baseUrl}}/spaces/{{spaceId}}
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{accessToken}}
+}
+
+body:json {
+  {
+    "visibility": "private",
+    "accessMode": "invited_only"
+  }
+}
+
+tests {
+  test("returns HTTP 200", () => {
+    expect(res.status).to.equal(200);
+  });
+}

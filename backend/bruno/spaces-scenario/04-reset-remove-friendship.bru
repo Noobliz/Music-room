@@ -1,0 +1,27 @@
+meta {
+  name: Reset - owner removes an existing friendship
+  type: http
+  seq: 4
+}
+
+delete {
+  url: {{baseUrl}}/friends/{{friendUserId}}
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{ownerToken}}
+}
+
+script:pre-request {
+  if (bru.getVar("friendRelationship") !== "friend") {
+    bru.runner.skipRequest();
+  }
+}
+
+tests {
+  test("returns HTTP 204", () => {
+    expect(res.status).to.equal(204);
+  });
+}

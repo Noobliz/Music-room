@@ -1,0 +1,31 @@
+meta {
+  name: Owner invites the friend
+  type: http
+  seq: 15
+}
+
+post {
+  url: {{baseUrl}}/spaces/{{spaceId}}/invitations
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{ownerToken}}
+}
+
+body:json {
+  {
+    "userId": "{{friendUserId}}"
+  }
+}
+
+tests {
+  test("returns HTTP 201", () => {
+    expect(res.status).to.equal(201);
+  });
+
+  test("returns the invited user", () => {
+    expect(res.body.user.id).to.equal(bru.getVar("friendUserId"));
+  });
+}
