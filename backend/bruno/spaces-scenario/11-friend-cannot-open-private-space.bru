@@ -1,0 +1,25 @@
+meta {
+  name: Friend cannot open the private space
+  type: http
+  seq: 11
+}
+
+get {
+  url: {{baseUrl}}/spaces/{{spaceId}}
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{friendToken}}
+}
+
+tests {
+  test("returns HTTP 404", () => {
+    expect(res.status).to.equal(404);
+  });
+
+  test("returns SPACE_NOT_FOUND", () => {
+    expect(res.body.error.code).to.equal("SPACE_NOT_FOUND");
+  });
+}

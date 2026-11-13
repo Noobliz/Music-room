@@ -1,0 +1,47 @@
+meta {
+  name: Owner creates a public playlist
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/spaces
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{ownerToken}}
+}
+
+body:json {
+  {
+    "kind": "playlist",
+    "name": "{{spaceName}}",
+    "description": "Songs for the drive"
+  }
+}
+
+script:pre-request {
+  bru.setVar("spaceName", `bruno-road-trip-${Date.now()}`);
+}
+
+script:post-response {
+  if (res.status === 201) {
+    bru.setVar("spaceId", res.body.id);
+  }
+}
+
+tests {
+  test("returns HTTP 201", () => {
+    expect(res.status).to.equal(201);
+  });
+
+  test("is public, open to everyone and owned by me", () => {
+    expect(res.body.visibility).to.equal("public");
+    expect(res.body.accessMode).to.equal("everyone");
+    expect(res.body.myRole).to.equal("owner");
+    expect(res.body.canAct).to.equal(true);
+    expect(res.body.owner.id).to.equal(bru.getVar("ownerId"));
+  });
+}

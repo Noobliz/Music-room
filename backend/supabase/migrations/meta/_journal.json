@@ -50,6 +50,27 @@
       "when": 1794473582537,
       "tag": "20261112085302_tracks_storage",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1794575328832,
+      "tag": "20261113130848_create_spaces",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1794575334427,
+      "tag": "20261113130854_spaces_functions",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1794575350032,
+      "tag": "20261113130910_spaces_policies",
+      "breakpoints": true
     }
   ]
 }

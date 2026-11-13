@@ -1,0 +1,25 @@
+meta {
+  name: Friend no longer finds the private space
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{baseUrl}}/spaces?q={{spaceName}}
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{friendToken}}
+}
+
+tests {
+  test("returns HTTP 200", () => {
+    expect(res.status).to.equal(200);
+  });
+
+  test("does not list the space", () => {
+    expect(res.body.items).to.have.length(0);
+  });
+}

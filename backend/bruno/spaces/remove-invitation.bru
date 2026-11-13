@@ -1,0 +1,21 @@
+meta {
+  name: Remove an invitation
+  type: http
+  seq: 8
+}
+
+delete {
+  url: {{baseUrl}}/spaces/{{spaceId}}/invitations/{{friendUserId}}
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{accessToken}}
+}
+
+tests {
+  test("returns HTTP 204", () => {
+    expect(res.status).to.equal(204);
+  });
+}

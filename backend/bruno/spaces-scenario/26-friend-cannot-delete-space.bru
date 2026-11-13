@@ -1,0 +1,25 @@
+meta {
+  name: Friend cannot delete the space
+  type: http
+  seq: 26
+}
+
+delete {
+  url: {{baseUrl}}/spaces/{{spaceId}}
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{friendToken}}
+}
+
+tests {
+  test("returns HTTP 403", () => {
+    expect(res.status).to.equal(403);
+  });
+
+  test("returns NOT_SPACE_OWNER", () => {
+    expect(res.body.error.code).to.equal("NOT_SPACE_OWNER");
+  });
+}
