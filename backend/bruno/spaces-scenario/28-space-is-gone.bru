@@ -1,0 +1,25 @@
+meta {
+  name: The deleted space is gone
+  type: http
+  seq: 28
+}
+
+get {
+  url: {{baseUrl}}/spaces/{{spaceId}}
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{ownerToken}}
+}
+
+tests {
+  test("returns HTTP 404", () => {
+    expect(res.status).to.equal(404);
+  });
+
+  test("returns SPACE_NOT_FOUND", () => {
+    expect(res.body.error.code).to.equal("SPACE_NOT_FOUND");
+  });
+}

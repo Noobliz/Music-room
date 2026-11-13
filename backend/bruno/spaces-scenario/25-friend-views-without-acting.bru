@@ -1,0 +1,26 @@
+meta {
+  name: Non-invited friend views the space but cannot act
+  type: http
+  seq: 25
+}
+
+get {
+  url: {{baseUrl}}/spaces/{{spaceId}}
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{friendToken}}
+}
+
+tests {
+  test("returns HTTP 200", () => {
+    expect(res.status).to.equal(200);
+  });
+
+  test("can view but not act", () => {
+    expect(res.body.myRole).to.equal("none");
+    expect(res.body.canAct).to.equal(false);
+  });
+}

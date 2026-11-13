@@ -1,0 +1,25 @@
+meta {
+  name: Owner lists invited users
+  type: http
+  seq: 17
+}
+
+get {
+  url: {{baseUrl}}/spaces/{{spaceId}}/invitations
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{ownerToken}}
+}
+
+tests {
+  test("returns HTTP 200", () => {
+    expect(res.status).to.equal(200);
+  });
+
+  test("lists the friend", () => {
+    expect(res.body.map((invitation) => invitation.user.id)).to.deep.equal([bru.getVar("friendUserId")]);
+  });
+}

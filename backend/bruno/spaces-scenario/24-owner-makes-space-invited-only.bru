@@ -1,0 +1,33 @@
+meta {
+  name: Owner makes the space public and invited only
+  type: http
+  seq: 24
+}
+
+patch {
+  url: {{baseUrl}}/spaces/{{spaceId}}
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{ownerToken}}
+}
+
+body:json {
+  {
+    "visibility": "public",
+    "accessMode": "invited_only"
+  }
+}
+
+tests {
+  test("returns HTTP 200", () => {
+    expect(res.status).to.equal(200);
+  });
+
+  test("is public and invited only", () => {
+    expect(res.body.visibility).to.equal("public");
+    expect(res.body.accessMode).to.equal("invited_only");
+  });
+}

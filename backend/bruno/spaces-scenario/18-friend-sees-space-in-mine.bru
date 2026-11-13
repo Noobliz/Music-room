@@ -1,0 +1,26 @@
+meta {
+  name: Friend sees the space in their spaces
+  type: http
+  seq: 18
+}
+
+get {
+  url: {{baseUrl}}/spaces/mine?kind=playlist
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{friendToken}}
+}
+
+tests {
+  test("returns HTTP 200", () => {
+    expect(res.status).to.equal(200);
+  });
+
+  test("lists the space as invited", () => {
+    const space = res.body.find((item) => item.id === bru.getVar("spaceId"));
+    expect(space.myRole).to.equal("invited");
+  });
+}
