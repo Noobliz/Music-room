@@ -20,6 +20,7 @@ const envSchema = z.object({
     .url()
     .transform((url) => url.replace(/\/+$/, '')),
   SUPABASE_PUBLISHABLE_KEY: z.string().min(1),
+  SUPABASE_SECRET_KEY: z.string().min(1).optional(),
   APP_DEEP_LINK_URL: z
     .string()
     .url()
@@ -52,6 +53,7 @@ export const appConfig = {
   supabase: {
     url: parsedEnv.data.SUPABASE_URL,
     publishableKey: parsedEnv.data.SUPABASE_PUBLISHABLE_KEY,
+    secretKey: parsedEnv.data.SUPABASE_SECRET_KEY,
   },
   app: {
     deepLinkUrl: parsedEnv.data.APP_DEEP_LINK_URL,

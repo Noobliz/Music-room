@@ -2,8 +2,9 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 import { appConfig } from '../config.js';
 
-export const createSupabaseClient = (): SupabaseClient =>
-  createClient(appConfig.supabase.url, appConfig.supabase.publishableKey, {
+const buildClient = (key: string, accessToken?: string): SupabaseClient =>
+  createClient(appConfig.supabase.url, key, {
+    ...(accessToken ? { global: { headers: { Authorization: `Bearer ${accessToken}` } } } : {}),
     auth: {
       persistSession: false,
       autoRefreshToken: false,
@@ -11,12 +12,16 @@ export const createSupabaseClient = (): SupabaseClient =>
     },
   });
 
+export const createSupabaseClient = (): SupabaseClient =>
+  buildClient(appConfig.supabase.publishableKey);
+
 export const createSupabaseClientAsUser = (accessToken: string): SupabaseClient =>
-  createClient(appConfig.supabase.url, appConfig.supabase.publishableKey, {
-    global: { headers: { Authorization: `Bearer ${accessToken}` } },
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-      detectSessionInUrl: false,
-    },
-  });
+  buildClient(appConfig.supabase.publishableKey, accessToken);
+
+export const createSupabaseAdminClient = (): SupabaseClient => {
+  const { secretKey } = appConfig.supabase;
+  if (!secretKey) {
+    throw new Error('SUPABASE_SECRET_KEY is required to write to the catalog buckets.');
+  }
+  return buildClient(secretKey);
+};

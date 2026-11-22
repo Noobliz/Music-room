@@ -13,6 +13,7 @@ import { authRoutes } from './routes/auth.routes.js';
 import { friendRoutes } from './routes/friends.routes.js';
 import { healthRoutes } from './routes/health.routes.js';
 import { profileRoutes } from './routes/profiles.routes.js';
+import { trackRoutes } from './routes/tracks.routes.js';
 
 export const buildServer = async () => {
   const server = Fastify({
@@ -42,6 +43,10 @@ export const buildServer = async () => {
           name: 'friends',
           description: 'Friend requests, friends list and user search',
         },
+        {
+          name: 'tracks',
+          description: 'Music catalog: search, track details and audio streaming',
+        },
       ],
       components: {
         securitySchemes: {
@@ -63,6 +68,7 @@ export const buildServer = async () => {
   await server.register(authRoutes, { prefix: '/auth' });
   await server.register(profileRoutes, { prefix: '/profiles' });
   await server.register(friendRoutes, { prefix: '/friends' });
+  await server.register(trackRoutes, { prefix: '/tracks' });
 
   return server;
 };
