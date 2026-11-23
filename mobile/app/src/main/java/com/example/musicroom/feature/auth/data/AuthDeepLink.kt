@@ -2,7 +2,7 @@ package com.example.musicroom.feature.auth.data
 
 import android.net.Uri
 
-// Lien reçu par email, traduit en type sûr. Le token est une donnée sensible : ne jamais logger ces objets.
+// Lien reçu par email, traduit en type sûr.
 sealed interface AuthDeepLink {
     data class VerifyEmail(val tokenHash: String) : AuthDeepLink
     data class ResetPassword(val tokenHash: String) : AuthDeepLink
