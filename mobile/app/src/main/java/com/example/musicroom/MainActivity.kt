@@ -84,13 +84,6 @@ class MainActivity : ComponentActivity() {
                             .gradientBackground(),
                         containerColor = Color.Transparent,
                     ) { innerPadding ->
-//                        LoginScreen(
-//                            state = loginViewModel.state,
-//                            onLoginClick = { inputEmail: String, inputPassword: String ->
-//                                loginViewModel.login(inputEmail, inputPassword)
-//                            },
-//                            modifier = Modifier.padding(innerPadding),
-//                        )
                         val deepLink: AuthDeepLink? = mainViewModel.pendingDeepLink
                         val user: AuthUser? = currentUser
                         val email: String? =
