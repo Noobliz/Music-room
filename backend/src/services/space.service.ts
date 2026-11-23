@@ -88,9 +88,10 @@ export const searchSpaces = async (
 
 export const listMySpaces = async (
   { userId }: AuthContext,
-  { kind }: MySpacesQuery,
-): Promise<SpaceView[]> => {
-  return (await listSpacesOf(userId, kind)).map((row) => toSpaceView(row, userId));
+  { kind, limit, offset }: MySpacesQuery,
+): Promise<SpacePage> => {
+  const { rows, total } = await listSpacesOf(userId, kind, limit, offset);
+  return { items: rows.map((row) => toSpaceView(row, userId)), total, limit, offset };
 };
 
 export const listInvitations = async (

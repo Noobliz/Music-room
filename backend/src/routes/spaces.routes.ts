@@ -78,11 +78,11 @@ export const spaceRoutes: FastifyPluginAsyncZod = async (server) => {
         tags: ['spaces'],
         summary: 'List my spaces',
         description:
-          'Spaces I own and spaces I am invited to, public or private, most recently updated first.',
+          'Spaces I own and spaces I am invited to, public or private, most recently updated first. Paginated like the search.',
         security: [{ bearerAuth: [] }],
         querystring: mySpacesQuerySchema,
         response: {
-          200: z.array(spaceSchema),
+          200: spacePageSchema,
           400: errorResponseSchema.describe('VALIDATION_ERROR'),
           401: unauthorizedSchema,
         },

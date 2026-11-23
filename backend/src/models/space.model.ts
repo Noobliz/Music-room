@@ -1,4 +1,16 @@
-import { and, asc, count, desc, eq, getTableColumns, ilike, or, sql, type SQL } from 'drizzle-orm';
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  getTableColumns,
+  ilike,
+  inArray,
+  or,
+  sql,
+  type SQL,
+} from 'drizzle-orm';
 
 import { db } from '../db/client.js';
 import {
@@ -18,6 +30,8 @@ export type SpaceUserRow = { id: string; username: string; avatarUrl: string | n
 export type SpaceRow = Space & { owner: SpaceUserRow; isInvited: boolean };
 
 export type SpaceSearchResult = { rows: SpaceRow[]; total: number };
+
+export type DbExecutor = Pick<typeof db, 'delete' | 'select'>;
 
 export type SpaceInvitationRow = { user: SpaceUserRow; createdAt: Date };
 
@@ -104,10 +118,19 @@ export const searchPublicSpaces = async (
 export const listSpacesOf = async (
   userId: string,
   kind: SpaceKind | undefined,
-): Promise<SpaceRow[]> => {
-  return selectSpaces(userId)
-    .where(and(or(eq(spaces.ownerId, userId), isInvited(userId)), ofKind(kind)))
-    .orderBy(desc(spaces.updatedAt), asc(spaces.id));
+  limit: number,
+  offset: number,
+): Promise<SpaceSearchResult> => {
+  const where = and(or(eq(spaces.ownerId, userId), isInvited(userId)), ofKind(kind));
+  const [rows, [totalRow]] = await Promise.all([
+    selectSpaces(userId)
+      .where(where)
+      .orderBy(desc(spaces.updatedAt), asc(spaces.id))
+      .limit(limit)
+      .offset(offset),
+    db.select({ total: count() }).from(spaces).where(where),
+  ]);
+  return { rows, total: totalRow?.total ?? 0 };
 };
 
 export const listInvitations = async (spaceId: string): Promise<SpaceInvitationRow[]> => {
@@ -137,4 +160,23 @@ export const deleteInvitation = async (spaceId: string, userId: string): Promise
     .where(and(eq(spaceInvitations.spaceId, spaceId), eq(spaceInvitations.userId, userId)))
     .returning({ userId: spaceInvitations.userId });
   return deleted.length > 0;
+};
+
+const invitedToSpacesOf = (executor: DbExecutor, inviteeId: string, ownerId: string): SQL =>
+  and(
+    eq(spaceInvitations.userId, inviteeId),
+    inArray(
+      spaceInvitations.spaceId,
+      executor.select({ id: spaces.id }).from(spaces).where(eq(spaces.ownerId, ownerId)),
+    ),
+  ) as SQL;
+
+export const deleteInvitationsBetween = async (
+  executor: DbExecutor,
+  a: string,
+  b: string,
+): Promise<void> => {
+  await executor
+    .delete(spaceInvitations)
+    .where(or(invitedToSpacesOf(executor, a, b), invitedToSpacesOf(executor, b, a)));
 };

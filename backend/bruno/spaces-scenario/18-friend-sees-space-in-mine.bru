@@ -5,7 +5,7 @@ meta {
 }
 
 get {
-  url: {{baseUrl}}/spaces/mine?kind=playlist
+  url: {{baseUrl}}/spaces/mine?kind=playlist&limit=5
   body: none
   auth: none
 }
@@ -19,8 +19,14 @@ tests {
     expect(res.status).to.equal(200);
   });
 
+  test("returns a page", () => {
+    expect(res.body.limit).to.equal(5);
+    expect(res.body.offset).to.equal(0);
+    expect(res.body.total).to.be.at.least(1);
+  });
+
   test("lists the space as invited", () => {
-    const space = res.body.find((item) => item.id === bru.getVar("spaceId"));
+    const space = res.body.items.find((item) => item.id === bru.getVar("spaceId"));
     expect(space.myRole).to.equal("invited");
   });
 }

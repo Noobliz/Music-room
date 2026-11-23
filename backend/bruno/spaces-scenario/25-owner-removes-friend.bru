@@ -1,11 +1,11 @@
 meta {
-  name: Owner deletes the space
+  name: Owner removes the friend
   type: http
-  seq: 27
+  seq: 25
 }
 
 delete {
-  url: {{baseUrl}}/spaces/{{spaceId}}
+  url: {{baseUrl}}/friends/{{friendUserId}}
   body: none
   auth: none
 }

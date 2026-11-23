@@ -126,7 +126,9 @@ describe('spaces', () => {
         .map((invitation) => invitation.user.id),
     ).toEqual([bob.user.id]);
     expect(
-      (await as(bob).get('/spaces/mine?kind=playlist')).json<SpaceView[]>().map((s) => s.id),
+      (await as(bob).get('/spaces/mine?kind=playlist'))
+        .json<SpacePage>()
+        .items.map((s) => s.id),
     ).toContain(space.id);
     expect((await as(bob).get(`/spaces/${space.id}`)).json<SpaceView>()).toMatchObject({
       myRole: 'invited',
@@ -159,5 +161,74 @@ describe('spaces', () => {
 
     expect((await as(alice).delete(`/spaces/${space.id}`)).statusCode).toBe(204);
     expect((await as(carol).get(`/spaces/${space.id}`)).statusCode).toBe(404);
+  });
+
+  it('rejects inviting yourself or the same friend twice', async () => {
+    const dave = await createVerifiedUser();
+    await befriend(alice, dave);
+    const space = (
+      await as(alice).post('/spaces', { kind: 'playlist', name: 'Invites', visibility: 'private' })
+    ).json<SpaceView>();
+    const invite = (userId: string) =>
+      as(alice).post(`/spaces/${space.id}/invitations`, { userId });
+
+    const self = await invite(alice.user.id);
+    expect(self.statusCode).toBe(400);
+    expect(self.json().error.code).toBe('CANNOT_INVITE_SELF');
+
+    expect((await invite(dave.user.id)).statusCode).toBe(201);
+    const twice = await invite(dave.user.id);
+    expect(twice.statusCode).toBe(409);
+    expect(twice.json().error.code).toBe('ALREADY_INVITED');
+  });
+
+  it('revokes the invitations in both directions when a friend is removed', async () => {
+    const erin = await createVerifiedUser();
+    const frank = await createVerifiedUser();
+    await befriend(erin, frank);
+    const createPrivate = async (owner: AuthResponse, invitee: AuthResponse) => {
+      const space = (
+        await as(owner).post('/spaces', { kind: 'event', name: 'Secret', visibility: 'private' })
+      ).json<SpaceView>();
+      await as(owner).post(`/spaces/${space.id}/invitations`, { userId: invitee.user.id });
+      return space;
+    };
+    const erinSpace = await createPrivate(erin, frank);
+    const frankSpace = await createPrivate(frank, erin);
+    expect((await as(frank).get(`/spaces/${erinSpace.id}`)).statusCode).toBe(200);
+
+    expect((await as(erin).delete(`/friends/${frank.user.id}`)).statusCode).toBe(204);
+
+    expect((await as(frank).get(`/spaces/${erinSpace.id}`)).statusCode).toBe(404);
+    expect((await as(erin).get(`/spaces/${frankSpace.id}`)).statusCode).toBe(404);
+    expect((await as(erin).get('/spaces/mine')).json<SpacePage>().items.map((s) => s.id)).toEqual(
+      [erinSpace.id],
+    );
+  });
+
+  it('sorts the search by exact match, then prefix, then name, and paginates it', async () => {
+    const tag = randomBytes(4).toString('hex');
+    for (const name of [`zz ${tag}`, `${tag} b`, tag, `${tag} a`]) {
+      await as(carol).post('/spaces', { kind: 'event', name });
+    }
+
+    const names = async (url: string) =>
+      (await as(bob).get(url)).json<SpacePage>().items.map((space) => space.name);
+    expect(await names(`/spaces?q=${tag}`)).toEqual([tag, `${tag} a`, `${tag} b`, `zz ${tag}`]);
+
+    const page = (await as(bob).get(`/spaces?q=${tag}&limit=2&offset=1`)).json<SpacePage>();
+    expect(page).toMatchObject({ total: 4, limit: 2, offset: 1 });
+    expect(page.items.map((space) => space.name)).toEqual([`${tag} a`, `${tag} b`]);
+  });
+
+  it('paginates my spaces', async () => {
+    const grace = await createVerifiedUser();
+    for (const name of ['One', 'Two', 'Three']) {
+      await as(grace).post('/spaces', { kind: 'playlist', name });
+    }
+
+    const page = (await as(grace).get('/spaces/mine?limit=2&offset=2')).json<SpacePage>();
+    expect(page).toMatchObject({ total: 3, limit: 2, offset: 2 });
+    expect(page.items.map((space) => space.name)).toEqual(['One']);
   });
 });

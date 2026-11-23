@@ -59,11 +59,11 @@ export const spaceSchema = z
 export const spacePageSchema = z
   .object({
     items: z.array(spaceSchema),
-    total: z.number().int().nonnegative().describe('Number of spaces matching the search'),
+    total: z.number().int().nonnegative().describe('Number of spaces matching the query'),
     limit: z.number().int().positive(),
     offset: z.number().int().nonnegative(),
   })
-  .describe('One page of public spaces');
+  .describe('One page of spaces');
 
 export const createSpaceBodySchema = z
   .object({
@@ -87,15 +87,7 @@ export const updateSpaceBodySchema = z
     message: 'Provide at least one field to update',
   });
 
-export const spaceSearchQuerySchema = z.object({
-  q: z
-    .string()
-    .trim()
-    .min(1)
-    .max(100)
-    .optional()
-    .describe('Part of the name, case-insensitive. Omit to browse the most recent spaces'),
-  kind: spaceKindSchema.optional(),
+const pageQuerySchema = z.object({
   limit: z.coerce
     .number()
     .int()
@@ -105,7 +97,18 @@ export const spaceSearchQuerySchema = z.object({
   offset: z.coerce.number().int().min(0).default(0),
 });
 
-export const mySpacesQuerySchema = z.object({
+export const spaceSearchQuerySchema = pageQuerySchema.extend({
+  q: z
+    .string()
+    .trim()
+    .min(1)
+    .max(100)
+    .optional()
+    .describe('Part of the name, case-insensitive. Omit to browse the most recent spaces'),
+  kind: spaceKindSchema.optional(),
+});
+
+export const mySpacesQuerySchema = pageQuerySchema.extend({
   kind: spaceKindSchema.optional(),
 });
 
