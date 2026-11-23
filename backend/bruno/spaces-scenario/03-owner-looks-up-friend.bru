@@ -1,0 +1,27 @@
+meta {
+  name: Owner looks up the friend relationship
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/friends/search?q={{friendUsername}}
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{ownerToken}}
+}
+
+script:post-response {
+  const match = res.body.find((user) => user.id === bru.getVar("friendUserId"));
+  bru.setVar("friendRelationship", match ? match.relationship : "none");
+  bru.setVar("friendRequestId", match ? match.requestId : null);
+}
+
+tests {
+  test("returns HTTP 200", () => {
+    expect(res.status).to.equal(200);
+  });
+}

@@ -1,0 +1,37 @@
+meta {
+  name: Create a space
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/spaces
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{accessToken}}
+}
+
+body:json {
+  {
+    "kind": "playlist",
+    "name": "Road trip",
+    "description": "Songs for the drive",
+    "visibility": "public",
+    "accessMode": "everyone"
+  }
+}
+
+script:post-response {
+  if (res.status === 201) {
+    bru.setVar("spaceId", res.body.id);
+  }
+}
+
+tests {
+  test("returns HTTP 201", () => {
+    expect(res.status).to.equal(201);
+  });
+}

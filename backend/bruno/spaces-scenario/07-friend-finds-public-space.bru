@@ -1,0 +1,25 @@
+meta {
+  name: Friend finds the public space
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/spaces?q={{spaceName}}&kind=playlist
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{friendToken}}
+}
+
+tests {
+  test("returns HTTP 200", () => {
+    expect(res.status).to.equal(200);
+  });
+
+  test("lists the space", () => {
+    expect(res.body.items.map((space) => space.id)).to.deep.equal([bru.getVar("spaceId")]);
+  });
+}

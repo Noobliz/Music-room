@@ -1,0 +1,4 @@
+ALTER TABLE "space_invitations" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE "spaces" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+CREATE POLICY "invitee or owner can read invitations" ON "space_invitations" AS PERMISSIVE FOR SELECT TO "authenticated" USING ("space_invitations"."user_id" = (select auth.uid()) or public.is_space_owner("space_invitations"."space_id", (select auth.uid())));--> statement-breakpoint
+CREATE POLICY "members can read their spaces" ON "spaces" AS PERMISSIVE FOR SELECT TO "authenticated" USING (public.is_space_member("spaces"."id", (select auth.uid())));

@@ -1,0 +1,32 @@
+meta {
+  name: Friend sees the space in their spaces
+  type: http
+  seq: 18
+}
+
+get {
+  url: {{baseUrl}}/spaces/mine?kind=playlist&limit=5
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{friendToken}}
+}
+
+tests {
+  test("returns HTTP 200", () => {
+    expect(res.status).to.equal(200);
+  });
+
+  test("returns a page", () => {
+    expect(res.body.limit).to.equal(5);
+    expect(res.body.offset).to.equal(0);
+    expect(res.body.total).to.be.at.least(1);
+  });
+
+  test("lists the space as invited", () => {
+    const space = res.body.items.find((item) => item.id === bru.getVar("spaceId"));
+    expect(space.myRole).to.equal("invited");
+  });
+}

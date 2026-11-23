@@ -4,6 +4,7 @@ import { type AnyPgColumn } from 'drizzle-orm/pg-core';
 import { db } from '../db/client.js';
 import { escapeLikePattern } from '../lib/sql.js';
 import { friendships, profiles, type Friendship } from '../db/schema.js';
+import { deleteInvitationsBetween } from './space.model.js';
 
 export type FriendshipStatus = Friendship['status'];
 
@@ -78,11 +79,17 @@ export const deletePendingRequest = async (id: string, userId: string): Promise<
 };
 
 export const deleteFriendship = async (userId: string, friendId: string): Promise<boolean> => {
-  const deleted = await db
-    .delete(friendships)
-    .where(and(betweenUsers(userId, friendId), eq(friendships.status, 'accepted')))
-    .returning({ id: friendships.id });
-  return deleted.length > 0;
+  return db.transaction(async (tx) => {
+    const deleted = await tx
+      .delete(friendships)
+      .where(and(betweenUsers(userId, friendId), eq(friendships.status, 'accepted')))
+      .returning({ id: friendships.id });
+    if (deleted.length === 0) {
+      return false;
+    }
+    await deleteInvitationsBetween(tx, userId, friendId);
+    return true;
+  });
 };
 
 export const listFriendshipsOf = async (

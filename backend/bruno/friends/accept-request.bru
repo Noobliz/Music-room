@@ -6,12 +6,16 @@ meta {
 
 post {
   url: {{baseUrl}}/friends/requests/{{friendRequestId}}/accept
-  body: none
+  body: json
   auth: none
 }
 
 headers {
   Authorization: Bearer {{accessToken}}
+}
+
+body:json {
+  {}
 }
 
 tests {

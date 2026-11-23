@@ -1,0 +1,21 @@
+meta {
+  name: Owner removes the friend
+  type: http
+  seq: 25
+}
+
+delete {
+  url: {{baseUrl}}/friends/{{friendUserId}}
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{ownerToken}}
+}
+
+tests {
+  test("returns HTTP 204", () => {
+    expect(res.status).to.equal(204);
+  });
+}
