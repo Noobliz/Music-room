@@ -10,6 +10,7 @@ export type AuthContext = {
   email: string;
   sessionId: string;
   accessToken: string;
+  expiresAt: Date;
 };
 
 const issuer = `${appConfig.supabase.url}/auth/v1`;
@@ -19,6 +20,7 @@ const claimsSchema = z.object({
   sub: z.string().uuid(),
   email: z.string().email(),
   session_id: z.string().uuid(),
+  exp: z.number().int(),
 });
 
 const verifySignature = async (accessToken: string): Promise<JWTPayload> => {
@@ -50,10 +52,10 @@ export const verifyAccessToken = async (accessToken: string): Promise<AuthContex
     throw new AppError(401, 'TOKEN_INVALID', 'Access token is invalid');
   }
 
-  const { sub: userId, email, session_id: sessionId } = claims.data;
+  const { sub: userId, email, session_id: sessionId, exp } = claims.data;
   if (!(await isSessionActive(sessionId, userId))) {
     throw new AppError(401, 'TOKEN_INVALID', 'Session has ended');
   }
 
-  return { userId, email, sessionId, accessToken };
+  return { userId, email, sessionId, accessToken, expiresAt: new Date(exp * 1000) };
 };

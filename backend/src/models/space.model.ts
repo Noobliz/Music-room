@@ -35,6 +35,8 @@ export type DbExecutor = Pick<typeof db, 'delete' | 'select'>;
 
 export type SpaceInvitationRow = { user: SpaceUserRow; createdAt: Date };
 
+export type SpaceMembers = { space: Space & { owner: SpaceUserRow }; inviteeIds: Set<string> };
+
 export type SpaceChanges = Partial<
   Pick<NewSpace, 'name' | 'description' | 'visibility' | 'accessMode'>
 >;
@@ -84,12 +86,35 @@ export const insertSpace = async (values: NewSpace): Promise<Space> => {
   return space as Space;
 };
 
-export const updateSpace = async (spaceId: string, changes: SpaceChanges): Promise<void> => {
-  await db.update(spaces).set(changes).where(eq(spaces.id, spaceId));
+export const findSpaceMembers = async (spaceId: string): Promise<SpaceMembers | undefined> => {
+  const [[space], invitees] = await Promise.all([
+    db
+      .select({ ...getTableColumns(spaces), owner: userColumns })
+      .from(spaces)
+      .innerJoin(profiles, eq(profiles.id, spaces.ownerId))
+      .where(eq(spaces.id, spaceId))
+      .limit(1),
+    db
+      .select({ userId: spaceInvitations.userId })
+      .from(spaceInvitations)
+      .where(eq(spaceInvitations.spaceId, spaceId)),
+  ]);
+  return space && { space, inviteeIds: new Set(invitees.map(({ userId }) => userId)) };
 };
 
-export const deleteSpace = async (spaceId: string): Promise<void> => {
-  await db.delete(spaces).where(eq(spaces.id, spaceId));
+export const updateSpace = async (spaceId: string, changes: SpaceChanges): Promise<void> => {
+  await db
+    .update(spaces)
+    .set({ ...changes, version: sql`${spaces.version} + 1` })
+    .where(eq(spaces.id, spaceId));
+};
+
+export const deleteSpace = async (spaceId: string): Promise<number | undefined> => {
+  const [deleted] = await db
+    .delete(spaces)
+    .where(eq(spaces.id, spaceId))
+    .returning({ version: spaces.version });
+  return deleted?.version;
 };
 
 export const searchPublicSpaces = async (
@@ -175,8 +200,10 @@ export const deleteInvitationsBetween = async (
   executor: DbExecutor,
   a: string,
   b: string,
-): Promise<void> => {
-  await executor
+): Promise<string[]> => {
+  const deleted = await executor
     .delete(spaceInvitations)
-    .where(or(invitedToSpacesOf(executor, a, b), invitedToSpacesOf(executor, b, a)));
+    .where(or(invitedToSpacesOf(executor, a, b), invitedToSpacesOf(executor, b, a)))
+    .returning({ spaceId: spaceInvitations.spaceId });
+  return deleted.map(({ spaceId }) => spaceId);
 };

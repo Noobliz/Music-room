@@ -20,6 +20,7 @@ import {
   USER_SEARCH_LIMIT,
   type UserSearchResult,
 } from '../schemas/friend.schema.js';
+import { notifyAccessChanged } from './space.service.js';
 import { type AuthContext } from './token.service.js';
 
 const requireUser = async (id: string): Promise<FriendUser> => {
@@ -126,9 +127,11 @@ export const deleteFriendRequest = async (
 };
 
 export const removeFriend = async ({ userId }: AuthContext, friendId: string): Promise<void> => {
-  if (!(await deleteFriendship(userId, friendId))) {
+  const deleted = await deleteFriendship(userId, friendId);
+  if (!deleted) {
     throw new AppError(404, 'FRIEND_NOT_FOUND', 'This user is not your friend');
   }
+  await notifyAccessChanged(deleted.revokedSpaceIds);
 };
 
 export const searchUsers = async (

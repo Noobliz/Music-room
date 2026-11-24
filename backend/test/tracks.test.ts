@@ -188,4 +188,24 @@ describe('tracks', () => {
     expect(partial.status).toBe(206);
     expect((await partial.arrayBuffer()).byteLength).toBe(100);
   });
+
+  it('reports a track missing from storage and restores it on the next import', async () => {
+    const [row] = await db.select().from(tracks).where(eq(tracks.id, track.id));
+    await createSupabaseAdminClient()
+      .storage.from(TRACKS_BUCKET)
+      .remove([row?.audioPath ?? '']);
+    const streamTrack = () =>
+      server.inject({
+        method: 'GET',
+        url: `/tracks/${track.id}/stream`,
+        headers: bearer(alice.session.accessToken),
+      });
+
+    const missing = await streamTrack();
+    expect(missing.statusCode).toBe(404);
+    expect(missing.json().error.code).toBe('TRACK_NOT_FOUND');
+
+    await importCatalog(catalogDir);
+    expect((await streamTrack()).statusCode).toBe(200);
+  });
 });

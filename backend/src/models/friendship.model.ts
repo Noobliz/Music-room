@@ -78,17 +78,19 @@ export const deletePendingRequest = async (id: string, userId: string): Promise<
   return deleted.length > 0;
 };
 
-export const deleteFriendship = async (userId: string, friendId: string): Promise<boolean> => {
+export const deleteFriendship = async (
+  userId: string,
+  friendId: string,
+): Promise<{ revokedSpaceIds: string[] } | undefined> => {
   return db.transaction(async (tx) => {
     const deleted = await tx
       .delete(friendships)
       .where(and(betweenUsers(userId, friendId), eq(friendships.status, 'accepted')))
       .returning({ id: friendships.id });
     if (deleted.length === 0) {
-      return false;
+      return undefined;
     }
-    await deleteInvitationsBetween(tx, userId, friendId);
-    return true;
+    return { revokedSpaceIds: await deleteInvitationsBetween(tx, userId, friendId) };
   });
 };
 

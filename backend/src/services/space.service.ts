@@ -4,6 +4,7 @@ import { areFriends, findProfileById } from '../models/profile.model.js';
 import {
   deleteInvitation,
   deleteSpace as deleteSpaceRow,
+  findSpaceMembers,
   insertInvitation,
   insertSpace,
   listInvitations as listInvitationRows,
@@ -22,6 +23,7 @@ import {
   type SpaceView,
   type UpdateSpaceBody,
 } from '../schemas/space.schema.js';
+import * as realtime from './realtime.service.js';
 import { requireSpaceOwner, requireViewableSpace, resolveAccess } from './space-access.service.js';
 import { type AuthContext } from './token.service.js';
 
@@ -37,9 +39,45 @@ const toSpaceView = (space: SpaceRow, userId: string): SpaceView => {
     owner: space.owner,
     myRole: role,
     canAct,
+    version: space.version,
     createdAt: space.createdAt.toISOString(),
     updatedAt: space.updatedAt.toISOString(),
   };
+};
+
+const notifySubscribers = async (spaceId: string, spaceChanged: boolean): Promise<void> => {
+  const subscribers = realtime.subscribersOf(spaceId);
+  const members = subscribers.length > 0 ? await findSpaceMembers(spaceId) : undefined;
+  if (!members) {
+    return;
+  }
+  const { space, inviteeIds } = members;
+  for (const [connection, previous] of subscribers) {
+    const { userId } = connection.auth;
+    const row = { ...space, isInvited: inviteeIds.has(userId) };
+    const access = resolveAccess(row, userId, row.isInvited);
+    if (!access.canView) {
+      realtime.unsubscribe(connection, spaceId);
+      connection.send({
+        type: 'space.access_revoked',
+        spaceId,
+        version: space.version,
+        data: null,
+      });
+    } else if (spaceChanged || access.role !== previous.role || access.canAct !== previous.canAct) {
+      realtime.updateSubscriberAccess(connection, spaceId, access);
+      connection.send({
+        type: 'space.updated',
+        spaceId,
+        version: space.version,
+        data: toSpaceView(row, userId),
+      });
+    }
+  }
+};
+
+export const notifyAccessChanged = async (spaceIds: string[]): Promise<void> => {
+  await Promise.all(spaceIds.map((spaceId) => notifySubscribers(spaceId, false)));
 };
 
 const toInvitationView = ({ user, createdAt }: SpaceInvitationRow): SpaceInvitationView => ({
@@ -70,12 +108,21 @@ export const updateSpace = async (
 ): Promise<SpaceView> => {
   await requireSpaceOwner(auth, spaceId);
   await updateSpaceRow(spaceId, body);
+  await notifySubscribers(spaceId, true);
   return getSpace(auth, spaceId);
 };
 
 export const deleteSpace = async (auth: AuthContext, spaceId: string): Promise<void> => {
   await requireSpaceOwner(auth, spaceId);
-  await deleteSpaceRow(spaceId);
+  const version = await deleteSpaceRow(spaceId);
+  if (version !== undefined) {
+    realtime.closeSpace(spaceId, {
+      type: 'space.deleted',
+      spaceId,
+      version: version + 1,
+      data: null,
+    });
+  }
 };
 
 export const searchSpaces = async (
@@ -121,6 +168,7 @@ export const inviteToSpace = async (
 
   try {
     const invitation = await insertInvitation(spaceId, inviteeId, auth.userId);
+    await notifyAccessChanged([spaceId]);
     return toInvitationView({
       user: { id: invitee.id, username: invitee.username, avatarUrl: invitee.avatarUrl },
       createdAt: invitation.createdAt,
@@ -149,4 +197,5 @@ export const removeInvitation = async (
   if (!(await deleteInvitation(spaceId, inviteeId))) {
     throw new AppError(404, 'SPACE_INVITATION_NOT_FOUND', 'This user is not invited to this space');
   }
+  await notifyAccessChanged([spaceId]);
 };

@@ -1,6 +1,7 @@
 import Fastify from 'fastify';
 import fastifySwagger from '@fastify/swagger';
 import fastifySwaggerUi from '@fastify/swagger-ui';
+import fastifyWebsocket from '@fastify/websocket';
 import {
   jsonSchemaTransform,
   serializerCompiler,
@@ -13,6 +14,7 @@ import { authRoutes } from './routes/auth.routes.js';
 import { friendRoutes } from './routes/friends.routes.js';
 import { healthRoutes } from './routes/health.routes.js';
 import { profileRoutes } from './routes/profiles.routes.js';
+import { realtimeRoutes } from './routes/realtime.routes.js';
 import { spaceRoutes } from './routes/spaces.routes.js';
 import { trackRoutes } from './routes/tracks.routes.js';
 
@@ -53,6 +55,11 @@ export const buildServer = async () => {
           description:
             'Events and playlists shared by Track Vote and Playlist Editor: visibility, access mode and invitations',
         },
+        {
+          name: 'realtime',
+          description:
+            'WebSocket GET /realtime with "Authorization: Bearer <accessToken>", pushing the changes of the spaces I subscribe to. Swagger does not describe WebSockets: messages, close codes and reconnection are in docs/realtime.md.',
+        },
       ],
       components: {
         securitySchemes: {
@@ -69,6 +76,7 @@ export const buildServer = async () => {
 
   await server.register(errorHandlerPlugin);
   await server.register(authenticatePlugin);
+  await server.register(fastifyWebsocket, { options: { maxPayload: 4096 } });
 
   await server.register(healthRoutes);
   await server.register(authRoutes, { prefix: '/auth' });
@@ -76,6 +84,7 @@ export const buildServer = async () => {
   await server.register(friendRoutes, { prefix: '/friends' });
   await server.register(trackRoutes, { prefix: '/tracks' });
   await server.register(spaceRoutes, { prefix: '/spaces' });
+  await server.register(realtimeRoutes, { prefix: '/realtime' });
 
   return server;
 };
