@@ -8,5 +8,10 @@ fun ErrorBody.toAuthError(httpCode: Int): AuthError =
         "INVALID_CREDENTIALS" -> AuthError.InvalidCredentials
         "RATE_LIMITED" -> AuthError.RateLimited
         "VALIDATION_ERROR" -> AuthError.Validation(details?:emptyList())
+        "INVALID_ID_TOKEN" -> AuthError.InvalidIdToken
+        "IDENTITY_ALREADY_LINKED" -> AuthError.IdentityAlreadyLinked
+        "LAST_IDENTITY" -> AuthError.LastIdentity
+        "IDENTITY_NOT_FOUND" -> AuthError.IdentityNotFound
+        "IDENTITY_NOT_DELETABLE" -> AuthError.IdentityNotDeletable
         else -> AuthError.Unknown(httpCode)
     }

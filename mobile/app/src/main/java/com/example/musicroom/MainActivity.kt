@@ -17,10 +17,15 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.lifecycle.lifecycleScope
 import com.example.musicroom.core.ui.gradientBackground
 import com.example.musicroom.core.permission.LocalNetworkPermissionGate
 import com.example.musicroom.feature.auth.data.AuthDeepLink
+import com.example.musicroom.feature.auth.data.AuthResult
 import com.example.musicroom.feature.auth.data.AuthUser
+import com.example.musicroom.feature.auth.data.GoogleCredentialProvider
+import com.example.musicroom.feature.auth.data.GoogleCredentialResult
+import com.example.musicroom.feature.auth.data.OAuthResponse
 import com.example.musicroom.feature.auth.data.parseAuthDeepLink
 import com.example.musicroom.feature.auth.ui.ConfirmEmailScreen
 import com.example.musicroom.feature.auth.ui.ConfirmEmailViewModel
@@ -28,6 +33,8 @@ import com.example.musicroom.feature.auth.ui.ForgotPasswordScreen
 import com.example.musicroom.feature.auth.ui.ForgotPasswordViewModel
 import com.example.musicroom.feature.auth.ui.HealthScreen
 import com.example.musicroom.feature.auth.ui.HealthViewModel
+import com.example.musicroom.feature.auth.ui.LinkedAccountsScreen
+import com.example.musicroom.feature.auth.ui.LinkedAccountsViewModel
 import com.example.musicroom.feature.auth.ui.LoginScreen
 import com.example.musicroom.feature.auth.ui.LoginViewModel
 import com.example.musicroom.feature.auth.ui.ResetPasswordScreen
@@ -38,6 +45,8 @@ import com.example.musicroom.feature.auth.ui.VerifyEmailScreen
 import com.example.musicroom.feature.auth.ui.VerifyEmailViewModel
 import com.example.musicroom.feature.home.ui.HomeScreen
 import com.example.musicroom.ui.theme.MusicroomTheme
+import kotlinx.coroutines.launch
+import androidx.activity.compose.BackHandler
 
 class MainActivity : ComponentActivity() {
     private val loginViewModel: LoginViewModel by viewModels { LoginViewModel.Factory }
@@ -51,6 +60,9 @@ class MainActivity : ComponentActivity() {
     private val confirmEmailViewModel: ConfirmEmailViewModel by viewModels { ConfirmEmailViewModel.Factory }
 
     private val resetPasswordViewModel: ResetPasswordViewModel by viewModels { ResetPasswordViewModel.Factory }
+
+    private val linkedAccountsViewModel: LinkedAccountsViewModel by viewModels { LinkedAccountsViewModel.Factory }
+    private val googleCredentialProvider: GoogleCredentialProvider = GoogleCredentialProvider()
     private val healthViewModel: HealthViewModel by viewModels()
 
 
@@ -68,24 +80,27 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             var showSignup: Boolean by rememberSaveable { mutableStateOf(false) }
-            var showForgotPassword: Boolean by rememberSaveable{ mutableStateOf(false) }
+            var showForgotPassword: Boolean by rememberSaveable { mutableStateOf(false) }
+            var showLinkedAccounts: Boolean by rememberSaveable { mutableStateOf(false) }
             val currentUser: AuthUser? by mainViewModel.currentUser.collectAsState()
             MusicroomTheme {
                 LocalNetworkPermissionGate {
                     Scaffold(
-                        modifier = Modifier.fillMaxSize().gradientBackground(),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .gradientBackground(),
                         containerColor = Color.Transparent,
                     ) { innerPadding ->
-//                        LoginScreen(
-//                            state = loginViewModel.state,
-//                            onLoginClick = { inputEmail: String, inputPassword: String ->
-//                                loginViewModel.login(inputEmail, inputPassword)
-//                            },
-//                            modifier = Modifier.padding(innerPadding),
-//                        )
                         val deepLink: AuthDeepLink? = mainViewModel.pendingDeepLink
                         val user: AuthUser? = currentUser
-                        val email: String? = signupViewModel.registeredEmail?: loginViewModel.notVerifiedEmail
+                        val email: String? =
+                            signupViewModel.registeredEmail ?: loginViewModel.notVerifiedEmail
+                        LaunchedEffect(user) {
+                            if (user == null) {
+                                showLinkedAccounts = false
+                                linkedAccountsViewModel.reset()
+                            }
+                        }
                         if (deepLink is AuthDeepLink.VerifyEmail) {
                             // Lance la vérification une seule fois pour ce lien, pas à chaque recomposition
                             LaunchedEffect(deepLink) {
@@ -103,14 +118,21 @@ class MainActivity : ComponentActivity() {
                                 },
                                 modifier = Modifier.padding(innerPadding),
                             )
-                        }
-                        else if (deepLink is AuthDeepLink.ResetPassword) {
+                        } else if (deepLink is AuthDeepLink.ResetPassword) {
                             ResetPasswordScreen(
                                 password = resetPasswordViewModel.password,
                                 confirmPassword = resetPasswordViewModel.confirmPassword,
                                 state = resetPasswordViewModel.state,
-                                onPasswordChange = { p: String -> resetPasswordViewModel.onPasswordChange(p) },
-                                onConfirmPasswordChange = { p: String -> resetPasswordViewModel.onConfirmPasswordChange(p) },
+                                onPasswordChange = { p: String ->
+                                    resetPasswordViewModel.onPasswordChange(
+                                        p
+                                    )
+                                },
+                                onConfirmPasswordChange = { p: String ->
+                                    resetPasswordViewModel.onConfirmPasswordChange(
+                                        p
+                                    )
+                                },
                                 // Le token vient du lien : MainActivity le connaît, l'écran n'a pas besoin de le voir
                                 onSubmitClick = { resetPasswordViewModel.submit(deepLink.tokenHash) },
                                 onGoToLoginClick = {
@@ -127,18 +149,47 @@ class MainActivity : ComponentActivity() {
                                 },
                                 modifier = Modifier.padding(innerPadding),
                             )
-                        }
-                        else if (user != null) {
-                            HomeScreen(
-                                user = user,
-                                onLogoutClick = { mainViewModel.logout() },
-                                modifier = Modifier.padding(innerPadding),                            )
-                        }
-                        else if (email != null) {
+                        } else if (user != null) {
+                            //S'exec a l'arrivée sur homescren. relancé uniquement si la clef (user) change (donc si l'utilisateur change)
+                            LaunchedEffect(user) {
+                                showSignup = false
+                            }
+                            if (showLinkedAccounts) {
+                                LaunchedEffect(Unit) {
+                                    linkedAccountsViewModel.load()
+                                }
+                                BackHandler {
+                                    showLinkedAccounts = false
+                                }
+                                LinkedAccountsScreen(
+                                    state = linkedAccountsViewModel.state,
+                                    onRetryClick = { linkedAccountsViewModel.load() },
+                                    onLinkGoogleClick = {
+                                        lifecycleScope.launch {
+                                            val res: GoogleCredentialResult = googleCredentialProvider.requestIdToken(this@MainActivity)
+                                            linkedAccountsViewModel.linkGoogle(res)
+                                        }
+                                    },
+                                    onUnlinkGoogleClick = {linkedAccountsViewModel.unlinkGoogle()},
+                                    onBackClick = {showLinkedAccounts = false },
+                                    modifier = Modifier.padding(innerPadding)
+                                )
+                            }
+                            else {
+                                HomeScreen(
+                                    user = user,
+                                    onLogoutClick = {
+                                        mainViewModel.logout()
+                                    },
+                                    onLinkedAccountsClick = { showLinkedAccounts = true },
+                                    modifier = Modifier.padding(innerPadding),
+                                )
+                            }
+                        } else if (email != null) {
                             VerifyEmailScreen(
                                 email = email,
                                 state = verifyEmailViewModel.state,
-                                onResendClick = { e: String -> verifyEmailViewModel.resendEmail(e)},
+                                onResendClick = { e: String -> verifyEmailViewModel.resendEmail(e) },
                                 onGoToLoginClick = {
                                     signupViewModel.backToLogin()
                                     loginViewModel.backToLogin()
@@ -148,33 +199,60 @@ class MainActivity : ComponentActivity() {
                                 modifier = Modifier.padding(innerPadding),
                             )
 
-                        }
-                        else if (showSignup) {
+                        } else if (showSignup) {
                             SignupScreen(
                                 state = signupViewModel.state,
-                                onSignupClick = { e: String, p: String, u: String -> signupViewModel.signup(e, p, u) },
+                                onSignupClick = { e: String, p: String, u: String ->
+                                    signupViewModel.signup(
+                                        e,
+                                        p,
+                                        u
+                                    )
+                                },
                                 onGoToLoginClick = { showSignup = false },
+                                onGoogleClick = {
+                                    lifecycleScope.launch {
+                                        val result: GoogleCredentialResult =
+                                            googleCredentialProvider.requestIdToken(this@MainActivity)
+                                        signupViewModel.signInWithGoogle(result)
+                                    }
+                                },
                                 modifier = Modifier.padding(innerPadding),
                             )
-                        } else if (showForgotPassword){
+                        } else if (showForgotPassword) {
                             ForgotPasswordScreen(
                                 email = forgotPasswordViewModel.email,
                                 state = forgotPasswordViewModel.state,
-                                onEmailChange = {e: String -> forgotPasswordViewModel.onEmailChange(e)},
-                                onSendClick = { forgotPasswordViewModel.sendResetEmail()},
+                                onEmailChange = { e: String ->
+                                    forgotPasswordViewModel.onEmailChange(
+                                        e
+                                    )
+                                },
+                                onSendClick = { forgotPasswordViewModel.sendResetEmail() },
                                 onGoToLoginClick = {
                                     showForgotPassword = false
                                     forgotPasswordViewModel.reset()
                                 },
                                 modifier = Modifier.padding(innerPadding)
                             )
-                        }
-                        else {
+                        } else {
                             LoginScreen(
                                 state = loginViewModel.state,
-                                onGoToForgotPasswordClick = {showForgotPassword = true},
-                                onLoginClick = { e: String, p: String -> loginViewModel.login(e, p) },
+                                onGoToForgotPasswordClick = { showForgotPassword = true },
+                                onLoginClick = { e: String, p: String ->
+                                    loginViewModel.login(
+                                        e,
+                                        p
+                                    )
+                                },
                                 onGoToSignupClick = { showSignup = true },
+                                onGoogleClick = {
+                                    lifecycleScope.launch {
+                                        val result: GoogleCredentialResult =
+                                            googleCredentialProvider.requestIdToken(this@MainActivity)
+                                        loginViewModel.signInWithGoogle(result)
+                                    }
+                                },
                                 modifier = Modifier.padding(innerPadding),
                             )
                         }

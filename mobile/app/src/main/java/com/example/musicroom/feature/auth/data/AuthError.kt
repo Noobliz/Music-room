@@ -14,4 +14,16 @@ sealed interface AuthError {
     data object Network : AuthError
     data class Unknown(val httpCode: Int?) : AuthError
 
+    data object InvalidIdToken : AuthError
+
+    data object IdentityAlreadyLinked : AuthError
+
+    data object LastIdentity : AuthError
+
+    data object IdentityNotFound : AuthError
+
+    data object IdentityNotDeletable : AuthError
+
+    data object NoGoogleAccount : AuthError
+
 }

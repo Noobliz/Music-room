@@ -108,4 +108,22 @@ class AuthRepository(
             sessionManager.clear()
         }
     }
+
+    suspend fun signInWithGoogle(idToken: String, nonce: String): AuthResult<OAuthResponse> {
+        val res: AuthResult<OAuthResponse> =
+            execute { api.signInWithGoogle(IdTokenRequest(idToken, nonce)) }
+        if (res is AuthResult.Success) {
+            sessionManager.onAuthenticated(res.data.toAuthResponse())
+        }
+        return res
+    }
+
+    suspend fun listIdentities(): AuthResult<IdentitiesResponse> =
+        execute { authenticatedApi.listIdentities() }
+
+    suspend fun linkGoogle(idToken: String, nonce: String): AuthResult<IdentitiesResponse> =
+        execute { authenticatedApi.linkGoogle(IdTokenRequest(idToken, nonce)) }
+
+    suspend fun unlinkGoogle(): AuthResult<Unit> =
+        execute(emptyBody = Unit) { authenticatedApi.unlinkGoogle() }
 }

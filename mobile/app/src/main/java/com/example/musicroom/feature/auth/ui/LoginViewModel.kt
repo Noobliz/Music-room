@@ -15,6 +15,8 @@ import kotlinx.coroutines.launch
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import com.example.musicroom.feature.auth.data.AuthError
 import com.example.musicroom.feature.auth.data.AuthResponse
+import com.example.musicroom.feature.auth.data.GoogleCredentialResult
+import com.example.musicroom.feature.auth.data.OAuthResponse
 
 
 class LoginViewModel(
@@ -50,6 +52,25 @@ class LoginViewModel(
     fun  backToLogin() {
        notVerifiedEmail = null
         state = AuthUiState.Idle
+    }
+    fun signInWithGoogle(credential: GoogleCredentialResult) {
+        if (state is AuthUiState.Loading) return
+        when (credential) {
+            is GoogleCredentialResult.Success -> {
+                state = AuthUiState.Loading
+                viewModelScope.launch {
+                    val res: AuthResult<OAuthResponse> =
+                        repository.signInWithGoogle(credential.idToken, credential.nonce)
+                    state = when (res) {
+                        is AuthResult.Success -> AuthUiState.Success
+                        is AuthResult.Failure -> AuthUiState.Failure(res.error)
+                    }
+                }
+            }
+            GoogleCredentialResult.Cancelled -> state = AuthUiState.Idle
+            GoogleCredentialResult.NoAccount -> state = AuthUiState.Failure(AuthError.NoGoogleAccount)
+            GoogleCredentialResult.Failure -> state = AuthUiState.Failure(AuthError.InvalidIdToken)
+        }
     }
 
 

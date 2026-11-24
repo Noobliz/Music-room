@@ -12,6 +12,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -34,6 +35,7 @@ fun LoginScreen(
     onLoginClick: (String, String) -> Unit,
     onGoToSignupClick: () -> Unit,
     onGoToForgotPasswordClick: () -> Unit,
+    onGoogleClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var email: String by remember { mutableStateOf("") }
@@ -92,6 +94,13 @@ fun LoginScreen(
                     onClick = { onLoginClick(email, password) },
                     loading = state is AuthUiState.Loading,
                 )
+                OutlinedButton(
+                    onClick = onGoogleClick,
+                    enabled = state !is AuthUiState.Loading,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("Continuer avec Google")
+                }
             }
         }
 

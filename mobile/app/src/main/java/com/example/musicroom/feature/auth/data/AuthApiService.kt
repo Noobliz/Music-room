@@ -3,6 +3,7 @@ package com.example.musicroom.feature.auth.data
 import retrofit2.Call
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.POST
 
@@ -39,4 +40,17 @@ interface AuthApiService {
 
     @POST("auth/password/reset")
     suspend fun resetPassword(@Body request: ResetPasswordRequest): Response<Unit>
+
+
+    @POST("auth/oauth/google")
+    suspend fun signInWithGoogle(@Body request: IdTokenRequest): Response<OAuthResponse>
+
+    @GET("auth/identities")
+    suspend fun listIdentities(): Response<IdentitiesResponse>
+
+    @POST("auth/identities/google")
+    suspend fun linkGoogle(@Body request: IdTokenRequest): Response<IdentitiesResponse>
+
+    @DELETE("auth/identities/google")
+    suspend fun unlinkGoogle(): Response<Unit>
 }

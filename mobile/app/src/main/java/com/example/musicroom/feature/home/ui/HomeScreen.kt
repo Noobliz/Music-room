@@ -10,7 +10,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -27,6 +29,7 @@ import com.example.musicroom.feature.auth.data.AuthUser
 fun HomeScreen(
     user: AuthUser,
     onLogoutClick: () -> Unit,
+    onLinkedAccountsClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val initial: String = user.username.firstOrNull()?.uppercase() ?: "?"
@@ -34,6 +37,7 @@ fun HomeScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
@@ -80,6 +84,18 @@ fun HomeScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(modifier = Modifier.height(28.dp))
+
+                OutlinedButton(
+                    onClick = onLinkedAccountsClick,
+                    shape = MaterialTheme.shapes.large,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp)
+                ) {
+                    Text("Gérer mes comptes liés")
+                }
+                Spacer(modifier = Modifier.height(28.dp))
+
                 OutlinedButton(
                     onClick = onLogoutClick,
                     shape = MaterialTheme.shapes.medium,
