@@ -51,6 +51,13 @@ export const spaceSchema = z
     canAct: z
       .boolean()
       .describe('Whether I can act in the space (vote, propose, edit the playlist...)'),
+    version: z
+      .number()
+      .int()
+      .positive()
+      .describe(
+        'Increases with every change to the shared state of the space; compare it with the version of realtime events',
+      ),
     createdAt: z.string().datetime(),
     updatedAt: z.string().datetime(),
   })

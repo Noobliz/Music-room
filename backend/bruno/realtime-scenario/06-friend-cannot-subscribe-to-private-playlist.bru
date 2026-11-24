@@ -1,0 +1,42 @@
+meta {
+  name: Friend cannot subscribe to the private playlist
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/spaces/{{privateSpaceId}}
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{friendToken}}
+}
+
+script:pre-request {
+  const { listen } = require(`${bru.cwd()}/realtime-scenario/realtime.js`);
+  const friend = await listen(
+    bru.interpolate("{{baseUrl}}"),
+    bru.getVar("friendToken"),
+    bru.getVar("privateSpaceId"),
+  );
+  try {
+    bru.setVar("friendAnswer", JSON.stringify(await friend.next()));
+  } finally {
+    friend.close();
+  }
+}
+
+tests {
+  test("answers the subscription with SPACE_NOT_FOUND", () => {
+    const answer = JSON.parse(bru.getVar("friendAnswer"));
+    expect(answer.type).to.equal("error");
+    expect(answer.spaceId).to.equal(bru.getVar("privateSpaceId"));
+    expect(answer.data.code).to.equal("SPACE_NOT_FOUND");
+  });
+
+  test("hides the playlist in REST too", () => {
+    expect(res.status).to.equal(404);
+  });
+}

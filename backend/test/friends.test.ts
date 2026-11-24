@@ -72,7 +72,7 @@ describe('friends', () => {
       method: 'PATCH',
       url: '/profiles/me',
       headers: bearer(bob.session.accessToken),
-      payload: { bio: 'Bob bio' },
+      payload: { bio: 'Bob bio', musicGenres: ['jazz'], fullName: 'Bob Private' },
     });
   });
 
@@ -110,7 +110,9 @@ describe('friends', () => {
     expect(accepted.statusCode).toBe(200);
     expect(accepted.json<Friend>().user.id).toBe(alice.user.id);
 
-    expect((await as(alice).get(`/profiles/${bob.user.id}`)).json().bio).toBe('Bob bio');
+    const friendView = (await as(alice).get(`/profiles/${bob.user.id}`)).json();
+    expect(friendView).toMatchObject({ bio: 'Bob bio', musicGenres: ['jazz'] });
+    expect(friendView).not.toHaveProperty('fullName');
     expect((await as(alice).get('/friends')).json<Friend[]>().map((f) => f.user.id)).toEqual([
       bob.user.id,
     ]);

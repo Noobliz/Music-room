@@ -1,0 +1,21 @@
+meta {
+  name: Owner deletes the private playlist
+  type: http
+  seq: 10
+}
+
+delete {
+  url: {{baseUrl}}/spaces/{{privateSpaceId}}
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{ownerToken}}
+}
+
+tests {
+  test("returns HTTP 204", () => {
+    expect(res.status).to.equal(204);
+  });
+}

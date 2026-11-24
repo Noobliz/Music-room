@@ -1,0 +1,64 @@
+meta {
+  name: Friend receives the rename live
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/spaces/{{spaceId}}
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{friendToken}}
+}
+
+script:pre-request {
+  const { listen, call } = require(`${bru.cwd()}/realtime-scenario/realtime.js`);
+  const baseUrl = bru.interpolate("{{baseUrl}}");
+  const spaceId = bru.getVar("spaceId");
+  const owner = await listen(baseUrl, bru.getVar("ownerToken"), spaceId);
+  const friend = await listen(baseUrl, bru.getVar("friendToken"), spaceId);
+  try {
+    const subscribed = [await owner.next(), await friend.next()];
+    await call(baseUrl, bru.getVar("ownerToken"), "PATCH", `/spaces/${spaceId}`, {
+      name: `${bru.getVar("spaceName")}-renamed`,
+    });
+    bru.setVar(
+      "realtimeEvents",
+      JSON.stringify({ subscribed, friend: await friend.next(), owner: await owner.next() }),
+    );
+  } finally {
+    owner.close();
+    friend.close();
+  }
+}
+
+tests {
+  const events = JSON.parse(bru.getVar("realtimeEvents"));
+
+  test("both subscriptions are accepted at version 1", () => {
+    events.subscribed.forEach((message) => {
+      expect(message.type).to.equal("subscribed");
+      expect(message.version).to.equal(1);
+    });
+  });
+
+  test("the friend receives the new name at version 2", () => {
+    expect(events.friend.type).to.equal("space.updated");
+    expect(events.friend.version).to.equal(2);
+    expect(events.friend.data.name).to.equal(`${bru.getVar("spaceName")}-renamed`);
+    expect(events.friend.data.myRole).to.equal("none");
+  });
+
+  test("the owner receives it too, with the owner role", () => {
+    expect(events.owner.type).to.equal("space.updated");
+    expect(events.owner.data.myRole).to.equal("owner");
+  });
+
+  test("REST returns the same version", () => {
+    expect(res.status).to.equal(200);
+    expect(res.body.version).to.equal(events.friend.version);
+  });
+}

@@ -1,0 +1,42 @@
+meta {
+  name: Owner receives the deletion live
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{baseUrl}}/spaces/{{spaceId}}
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{ownerToken}}
+}
+
+script:pre-request {
+  const { listen, call } = require(`${bru.cwd()}/realtime-scenario/realtime.js`);
+  const baseUrl = bru.interpolate("{{baseUrl}}");
+  const spaceId = bru.getVar("spaceId");
+  const owner = await listen(baseUrl, bru.getVar("ownerToken"), spaceId);
+  try {
+    await owner.next();
+    await call(baseUrl, bru.getVar("ownerToken"), "DELETE", `/spaces/${spaceId}`);
+    bru.setVar("realtimeEvents", JSON.stringify({ owner: await owner.next() }));
+  } finally {
+    owner.close();
+  }
+}
+
+tests {
+  const events = JSON.parse(bru.getVar("realtimeEvents"));
+
+  test("the owner receives space.deleted at version 4", () => {
+    expect(events.owner.type).to.equal("space.deleted");
+    expect(events.owner.version).to.equal(4);
+  });
+
+  test("the playlist is gone in REST", () => {
+    expect(res.status).to.equal(404);
+  });
+}

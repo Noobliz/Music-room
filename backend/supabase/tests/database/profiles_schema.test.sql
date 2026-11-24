@@ -7,7 +7,7 @@ select plan(30);
 select has_table('public', 'profiles', 'profiles table exists');
 select columns_are(
   'public', 'profiles',
-  array['id', 'username', 'avatar_url', 'bio', 'created_at', 'updated_at'],
+  array['id', 'username', 'avatar_url', 'bio', 'music_genres', 'full_name', 'birth_date', 'created_at', 'updated_at'],
   'profiles has the expected columns'
 );
 select col_is_pk('public', 'profiles', 'id', 'id is the primary key');

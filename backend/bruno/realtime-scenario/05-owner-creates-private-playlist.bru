@@ -1,0 +1,35 @@
+meta {
+  name: Owner creates a private playlist
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/spaces
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{ownerToken}}
+}
+
+body:json {
+  {
+    "kind": "playlist",
+    "name": "{{spaceName}}-private",
+    "visibility": "private"
+  }
+}
+
+script:post-response {
+  if (res.status === 201) {
+    bru.setVar("privateSpaceId", res.body.id);
+  }
+}
+
+tests {
+  test("returns HTTP 201", () => {
+    expect(res.status).to.equal(201);
+  });
+}

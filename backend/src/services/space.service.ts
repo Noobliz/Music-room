@@ -1,9 +1,12 @@
+import { type FastifyBaseLogger } from 'fastify';
+
 import { isUniqueViolation } from '../db/errors.js';
 import { AppError } from '../errors/app-error.js';
 import { areFriends, findProfileById } from '../models/profile.model.js';
 import {
   deleteInvitation,
   deleteSpace as deleteSpaceRow,
+  findSpaceMembers,
   insertInvitation,
   insertSpace,
   listInvitations as listInvitationRows,
@@ -22,6 +25,7 @@ import {
   type SpaceView,
   type UpdateSpaceBody,
 } from '../schemas/space.schema.js';
+import * as realtime from './realtime.service.js';
 import { requireSpaceOwner, requireViewableSpace, resolveAccess } from './space-access.service.js';
 import { type AuthContext } from './token.service.js';
 
@@ -37,9 +41,57 @@ const toSpaceView = (space: SpaceRow, userId: string): SpaceView => {
     owner: space.owner,
     myRole: role,
     canAct,
+    version: space.version,
     createdAt: space.createdAt.toISOString(),
     updatedAt: space.updatedAt.toISOString(),
   };
+};
+
+const notifySubscribers = async (spaceId: string, spaceChanged: boolean): Promise<void> => {
+  const subscribers = realtime.subscribersOf(spaceId);
+  const members = subscribers.length > 0 ? await findSpaceMembers(spaceId) : undefined;
+  if (!members) {
+    return;
+  }
+  const { space, inviteeIds } = members;
+  for (const [connection, previous] of subscribers) {
+    const { userId } = connection.auth;
+    const row = { ...space, isInvited: inviteeIds.has(userId) };
+    const access = resolveAccess(row, userId, row.isInvited);
+    if (!access.canView) {
+      realtime.unsubscribe(connection, spaceId);
+      connection.send({
+        type: 'space.access_revoked',
+        spaceId,
+        version: space.version,
+        data: null,
+      });
+    } else if (spaceChanged || access.role !== previous.role || access.canAct !== previous.canAct) {
+      realtime.updateSubscriberAccess(connection, spaceId, access);
+      connection.send({
+        type: 'space.updated',
+        spaceId,
+        version: space.version,
+        data: toSpaceView(row, userId),
+      });
+    }
+  }
+};
+
+const notifyInBackground = (
+  log: FastifyBaseLogger,
+  spaceId: string,
+  spaceChanged: boolean,
+): void => {
+  notifySubscribers(spaceId, spaceChanged).catch((error: unknown) => {
+    log.error({ err: error, spaceId }, 'Realtime notification failed');
+  });
+};
+
+export const notifyAccessChanged = (log: FastifyBaseLogger, spaceIds: string[]): void => {
+  for (const spaceId of spaceIds) {
+    notifyInBackground(log, spaceId, false);
+  }
 };
 
 const toInvitationView = ({ user, createdAt }: SpaceInvitationRow): SpaceInvitationView => ({
@@ -64,18 +116,28 @@ export const getSpace = async (auth: AuthContext, spaceId: string): Promise<Spac
 };
 
 export const updateSpace = async (
+  log: FastifyBaseLogger,
   auth: AuthContext,
   spaceId: string,
   body: UpdateSpaceBody,
 ): Promise<SpaceView> => {
   await requireSpaceOwner(auth, spaceId);
   await updateSpaceRow(spaceId, body);
+  notifyInBackground(log, spaceId, true);
   return getSpace(auth, spaceId);
 };
 
 export const deleteSpace = async (auth: AuthContext, spaceId: string): Promise<void> => {
   await requireSpaceOwner(auth, spaceId);
-  await deleteSpaceRow(spaceId);
+  const version = await deleteSpaceRow(spaceId);
+  if (version !== undefined) {
+    realtime.closeSpace(spaceId, {
+      type: 'space.deleted',
+      spaceId,
+      version: version + 1,
+      data: null,
+    });
+  }
 };
 
 export const searchSpaces = async (
@@ -103,6 +165,7 @@ export const listInvitations = async (
 };
 
 export const inviteToSpace = async (
+  log: FastifyBaseLogger,
   auth: AuthContext,
   spaceId: string,
   inviteeId: string,
@@ -119,21 +182,23 @@ export const inviteToSpace = async (
     throw new AppError(403, 'INVITEE_NOT_FRIEND', 'You can only invite your friends');
   }
 
-  try {
-    const invitation = await insertInvitation(spaceId, inviteeId, auth.userId);
-    return toInvitationView({
-      user: { id: invitee.id, username: invitee.username, avatarUrl: invitee.avatarUrl },
-      createdAt: invitation.createdAt,
-    });
-  } catch (error) {
-    if (isUniqueViolation(error)) {
-      throw new AppError(409, 'ALREADY_INVITED', 'This user is already invited to this space');
-    }
-    throw error;
-  }
+  const invitation = await insertInvitation(spaceId, inviteeId, auth.userId).catch(
+    (error: unknown) => {
+      if (isUniqueViolation(error)) {
+        throw new AppError(409, 'ALREADY_INVITED', 'This user is already invited to this space');
+      }
+      throw error;
+    },
+  );
+  notifyAccessChanged(log, [spaceId]);
+  return toInvitationView({
+    user: { id: invitee.id, username: invitee.username, avatarUrl: invitee.avatarUrl },
+    createdAt: invitation.createdAt,
+  });
 };
 
 export const removeInvitation = async (
+  log: FastifyBaseLogger,
   auth: AuthContext,
   spaceId: string,
   inviteeId: string,
@@ -149,4 +214,5 @@ export const removeInvitation = async (
   if (!(await deleteInvitation(spaceId, inviteeId))) {
     throw new AppError(404, 'SPACE_INVITATION_NOT_FOUND', 'This user is not invited to this space');
   }
+  notifyAccessChanged(log, [spaceId]);
 };
