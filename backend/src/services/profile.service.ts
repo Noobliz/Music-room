@@ -44,6 +44,7 @@ const PROFILE_FIELD_VISIBILITY = {
   username: 'public',
   avatarUrl: 'public',
   bio: 'friends',
+  musicGenres: 'friends',
 } as const satisfies Partial<Record<keyof Profile, 'public' | 'friends'>>;
 
 type VisibleField = keyof typeof PROFILE_FIELD_VISIBILITY;
@@ -61,6 +62,9 @@ const toOwnProfile = (profile: Profile, email: string): OwnProfile => ({
   username: profile.username,
   avatarUrl: profile.avatarUrl,
   bio: profile.bio,
+  musicGenres: profile.musicGenres,
+  fullName: profile.fullName,
+  birthDate: profile.birthDate,
   createdAt: profile.createdAt.toISOString(),
   updatedAt: profile.updatedAt.toISOString(),
 });
@@ -125,12 +129,13 @@ const saveProfile = async (
 
 export const updateOwnProfile = async (
   auth: AuthContext,
-  { username, bio }: UpdateProfileBody,
+  changes: UpdateProfileBody,
 ): Promise<OwnProfile> => {
+  const { username } = changes;
   if (username !== undefined && (await isUsernameTakenByOther(username, auth.userId))) {
     throw new AppError(409, 'USERNAME_TAKEN', 'Username already taken');
   }
-  return saveProfile(auth, { username, bio });
+  return saveProfile(auth, changes);
 };
 
 const toAvatarContentType = (contentType: string | undefined): AvatarContentType => {

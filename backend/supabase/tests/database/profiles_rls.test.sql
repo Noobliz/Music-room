@@ -34,7 +34,8 @@ select results_eq(
   'a user only sees their own profile'
 );
 select lives_ok(
-  $$ update public.profiles set bio = 'hello', avatar_url = 'https://example.com/a.png', username = 'alice_2'
+  $$ update public.profiles set bio = 'hello', avatar_url = 'https://example.com/a.png', username = 'alice_2',
+       music_genres = '{jazz}', full_name = 'Alice', birth_date = '1995-04-12'
      where id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa' $$,
   'a user can update the editable columns of their own profile'
 );

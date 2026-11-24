@@ -82,6 +82,9 @@ describe('profiles', () => {
       username: alice.user.username,
       avatarUrl: null,
       bio: null,
+      musicGenres: [],
+      fullName: null,
+      birthDate: null,
     });
 
     const username = `${alice.user.username}_x`;
@@ -89,15 +92,29 @@ describe('profiles', () => {
       method: 'PATCH',
       url: '/profiles/me',
       headers: bearer(alice.session.accessToken),
-      payload: { username, bio: '  Hello  ' },
+      payload: {
+        username,
+        bio: '  Hello  ',
+        musicGenres: ['jazz', 'rock', 'jazz'],
+        fullName: '  Alice Martin  ',
+        birthDate: '1995-04-12',
+      },
     });
     expect(updated.statusCode).toBe(200);
-    expect(updated.json<OwnProfile>()).toMatchObject({ username, bio: 'Hello' });
+    expect(updated.json<OwnProfile>()).toMatchObject({
+      username,
+      bio: 'Hello',
+      musicGenres: ['jazz', 'rock'],
+      fullName: 'Alice Martin',
+      birthDate: '1995-04-12',
+    });
 
     for (const payload of [
       {},
       { bio: 'x'.repeat(501) },
       { avatarUrl: 'https://example.com/a.png' },
+      { musicGenres: ['polka'] },
+      { birthDate: '2999-01-01' },
     ]) {
       const invalid = await server.inject({
         method: 'PATCH',

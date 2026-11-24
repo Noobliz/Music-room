@@ -78,6 +78,20 @@
       "when": 1795438373651,
       "tag": "20261123125253_spaces_version",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1795530062916,
+      "tag": "20261124142102_profile_preferences_private_fields",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1795530069735,
+      "tag": "20261124142109_profile_preferences_grants",
+      "breakpoints": true
     }
   ]
 }

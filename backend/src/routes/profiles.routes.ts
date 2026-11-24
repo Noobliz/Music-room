@@ -76,7 +76,7 @@ export const profileRoutes: FastifyPluginAsyncZod = async (server) => {
         tags: ['profiles'],
         summary: 'Update my profile',
         description:
-          'Changes the username and/or the bio. Omitted fields are left unchanged. The avatar is managed with PUT /profiles/me/avatar.',
+          'Changes the username (public), the bio and music genres (friends only), the real name and birth date (private). Omitted fields are left unchanged. The avatar is managed with PUT /profiles/me/avatar.',
         security: [{ bearerAuth: [] }],
         body: updateProfileBodySchema,
         response: {
@@ -136,7 +136,7 @@ export const profileRoutes: FastifyPluginAsyncZod = async (server) => {
         tags: ['profiles'],
         summary: 'Get the profile of a user',
         description:
-          'Public fields (username, avatar) are visible to every authenticated user. Friend-only fields (bio) are only returned to friends. Private fields (email) are never returned.',
+          'Public fields (username, avatar) are visible to every authenticated user. Friend-only fields (bio, music genres) are only returned to friends. Private fields (email, real name, birth date) are never returned.',
         security: [{ bearerAuth: [] }],
         params: profileIdParamsSchema,
         response: {
