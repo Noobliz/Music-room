@@ -33,12 +33,12 @@ object ApiClient {
     }
 
 
-    fun authenticatedApi(sessionManager: SessionManager): AuthApiService{
+    fun authenticatedRetrofit(sessionManager: SessionManager): Retrofit{
         val authedClient: OkHttpClient = client.newBuilder()
             .addInterceptor(AuthInterceptor(sessionManager))
             .authenticator(TokenAuthenticator(sessionManager, authApi))
             .build()
         val retrofit = buildRetrofit(authedClient)
-        return retrofit.create(AuthApiService::class.java)
+        return retrofit
     }
 }
