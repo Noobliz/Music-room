@@ -1,3 +1,5 @@
+import { type FastifyBaseLogger } from 'fastify';
+
 import { isUniqueViolation } from '../db/errors.js';
 import { AppError } from '../errors/app-error.js';
 import {
@@ -126,12 +128,16 @@ export const deleteFriendRequest = async (
   }
 };
 
-export const removeFriend = async ({ userId }: AuthContext, friendId: string): Promise<void> => {
+export const removeFriend = async (
+  log: FastifyBaseLogger,
+  { userId }: AuthContext,
+  friendId: string,
+): Promise<void> => {
   const deleted = await deleteFriendship(userId, friendId);
   if (!deleted) {
     throw new AppError(404, 'FRIEND_NOT_FOUND', 'This user is not your friend');
   }
-  await notifyAccessChanged(deleted.revokedSpaceIds);
+  notifyAccessChanged(log, deleted.revokedSpaceIds);
 };
 
 export const searchUsers = async (
