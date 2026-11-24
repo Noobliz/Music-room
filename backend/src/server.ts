@@ -58,7 +58,7 @@ export const buildServer = async () => {
         {
           name: 'realtime',
           description:
-            'WebSocket GET /realtime with "Authorization: Bearer <accessToken>", pushing the changes of the spaces I subscribe to. Swagger does not describe WebSockets: messages, close codes and reconnection are in docs/realtime.md.',
+            'WebSocket pushing the changes of the spaces I subscribe to. The whole protocol is in the description of GET /realtime',
         },
       ],
       components: {
