@@ -25,7 +25,8 @@ class LinkedAccountsViewModel(
 
 
     fun load(){
-        state = LinkedAccountsState.Loading
+        if (state !is LinkedAccountsState.Loaded)
+            state = LinkedAccountsState.Loading
         viewModelScope.launch {
             val res: AuthResult<IdentitiesResponse> = repository.listIdentities()
             state = when(res){
@@ -80,6 +81,10 @@ class LinkedAccountsViewModel(
             }
         }
 
+    }
+
+    fun reset() {
+        state = LinkedAccountsState.Loading
     }
 
 

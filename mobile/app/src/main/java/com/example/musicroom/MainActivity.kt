@@ -21,9 +21,11 @@ import androidx.lifecycle.lifecycleScope
 import com.example.musicroom.core.ui.gradientBackground
 import com.example.musicroom.core.permission.LocalNetworkPermissionGate
 import com.example.musicroom.feature.auth.data.AuthDeepLink
+import com.example.musicroom.feature.auth.data.AuthResult
 import com.example.musicroom.feature.auth.data.AuthUser
 import com.example.musicroom.feature.auth.data.GoogleCredentialProvider
 import com.example.musicroom.feature.auth.data.GoogleCredentialResult
+import com.example.musicroom.feature.auth.data.OAuthResponse
 import com.example.musicroom.feature.auth.data.parseAuthDeepLink
 import com.example.musicroom.feature.auth.ui.ConfirmEmailScreen
 import com.example.musicroom.feature.auth.ui.ConfirmEmailViewModel
@@ -31,6 +33,8 @@ import com.example.musicroom.feature.auth.ui.ForgotPasswordScreen
 import com.example.musicroom.feature.auth.ui.ForgotPasswordViewModel
 import com.example.musicroom.feature.auth.ui.HealthScreen
 import com.example.musicroom.feature.auth.ui.HealthViewModel
+import com.example.musicroom.feature.auth.ui.LinkedAccountsScreen
+import com.example.musicroom.feature.auth.ui.LinkedAccountsViewModel
 import com.example.musicroom.feature.auth.ui.LoginScreen
 import com.example.musicroom.feature.auth.ui.LoginViewModel
 import com.example.musicroom.feature.auth.ui.ResetPasswordScreen
@@ -42,6 +46,7 @@ import com.example.musicroom.feature.auth.ui.VerifyEmailViewModel
 import com.example.musicroom.feature.home.ui.HomeScreen
 import com.example.musicroom.ui.theme.MusicroomTheme
 import kotlinx.coroutines.launch
+import androidx.activity.compose.BackHandler
 
 class MainActivity : ComponentActivity() {
     private val loginViewModel: LoginViewModel by viewModels { LoginViewModel.Factory }
@@ -56,6 +61,7 @@ class MainActivity : ComponentActivity() {
 
     private val resetPasswordViewModel: ResetPasswordViewModel by viewModels { ResetPasswordViewModel.Factory }
 
+    private val linkedAccountsViewModel: LinkedAccountsViewModel by viewModels { LinkedAccountsViewModel.Factory }
     private val googleCredentialProvider: GoogleCredentialProvider = GoogleCredentialProvider()
     private val healthViewModel: HealthViewModel by viewModels()
 
@@ -75,6 +81,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             var showSignup: Boolean by rememberSaveable { mutableStateOf(false) }
             var showForgotPassword: Boolean by rememberSaveable { mutableStateOf(false) }
+            var showLinkedAccounts: Boolean by rememberSaveable { mutableStateOf(false) }
             val currentUser: AuthUser? by mainViewModel.currentUser.collectAsState()
             MusicroomTheme {
                 LocalNetworkPermissionGate {
@@ -88,6 +95,12 @@ class MainActivity : ComponentActivity() {
                         val user: AuthUser? = currentUser
                         val email: String? =
                             signupViewModel.registeredEmail ?: loginViewModel.notVerifiedEmail
+                        LaunchedEffect(user) {
+                            if (user == null) {
+                                showLinkedAccounts = false
+                                linkedAccountsViewModel.reset()
+                            }
+                        }
                         if (deepLink is AuthDeepLink.VerifyEmail) {
                             // Lance la vérification une seule fois pour ce lien, pas à chaque recomposition
                             LaunchedEffect(deepLink) {
@@ -141,11 +154,37 @@ class MainActivity : ComponentActivity() {
                             LaunchedEffect(user) {
                                 showSignup = false
                             }
-                            HomeScreen(
-                                user = user,
-                                onLogoutClick = { mainViewModel.logout() },
-                                modifier = Modifier.padding(innerPadding),
-                            )
+                            if (showLinkedAccounts) {
+                                LaunchedEffect(Unit) {
+                                    linkedAccountsViewModel.load()
+                                }
+                                BackHandler {
+                                    showLinkedAccounts = false
+                                }
+                                LinkedAccountsScreen(
+                                    state = linkedAccountsViewModel.state,
+                                    onRetryClick = { linkedAccountsViewModel.load() },
+                                    onLinkGoogleClick = {
+                                        lifecycleScope.launch {
+                                            val res: GoogleCredentialResult = googleCredentialProvider.requestIdToken(this@MainActivity)
+                                            linkedAccountsViewModel.linkGoogle(res)
+                                        }
+                                    },
+                                    onUnlinkGoogleClick = {linkedAccountsViewModel.unlinkGoogle()},
+                                    onBackClick = {showLinkedAccounts = false },
+                                    modifier = Modifier.padding(innerPadding)
+                                )
+                            }
+                            else {
+                                HomeScreen(
+                                    user = user,
+                                    onLogoutClick = {
+                                        mainViewModel.logout()
+                                    },
+                                    onLinkedAccountsClick = { showLinkedAccounts = true },
+                                    modifier = Modifier.padding(innerPadding),
+                                )
+                            }
                         } else if (email != null) {
                             VerifyEmailScreen(
                                 email = email,

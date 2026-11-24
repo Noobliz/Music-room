@@ -78,7 +78,7 @@ fun LinkedAccountsScreen(
                     }
                 }
 
-                // Erreur d'action (liaison / déliaison) : la liste reste affichée au-dessus
+                // Erreur d'action (liaison / déliaison)
                 val actionError: AuthError? = state.actionError
                 if (actionError != null) {
                     ErrorBanner(message = actionError.toMessage())
