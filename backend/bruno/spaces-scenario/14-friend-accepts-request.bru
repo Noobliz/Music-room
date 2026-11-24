@@ -1,0 +1,25 @@
+meta {
+  name: Friend accepts the friend request
+  type: http
+  seq: 14
+}
+
+post {
+  url: {{baseUrl}}/friends/requests/{{friendRequestId}}/accept
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{friendToken}}
+}
+
+body:json {
+  {}
+}
+
+tests {
+  test("returns HTTP 200", () => {
+    expect(res.status).to.equal(200);
+  });
+}

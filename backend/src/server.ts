@@ -10,7 +10,11 @@ import {
 import { authenticatePlugin } from './plugins/authenticate.plugin.js';
 import { errorHandlerPlugin } from './plugins/error-handler.plugin.js';
 import { authRoutes } from './routes/auth.routes.js';
+import { friendRoutes } from './routes/friends.routes.js';
 import { healthRoutes } from './routes/health.routes.js';
+import { profileRoutes } from './routes/profiles.routes.js';
+import { spaceRoutes } from './routes/spaces.routes.js';
+import { trackRoutes } from './routes/tracks.routes.js';
 
 export const buildServer = async () => {
   const server = Fastify({
@@ -32,6 +36,23 @@ export const buildServer = async () => {
           name: 'auth',
           description: 'Email, password and Google authentication, linked login methods',
         },
+        {
+          name: 'profiles',
+          description: 'User profiles, avatar and account deletion',
+        },
+        {
+          name: 'friends',
+          description: 'Friend requests, friends list and user search',
+        },
+        {
+          name: 'tracks',
+          description: 'Music catalog: search, track details and audio streaming',
+        },
+        {
+          name: 'spaces',
+          description:
+            'Events and playlists shared by Track Vote and Playlist Editor: visibility, access mode and invitations',
+        },
       ],
       components: {
         securitySchemes: {
@@ -51,6 +72,10 @@ export const buildServer = async () => {
 
   await server.register(healthRoutes);
   await server.register(authRoutes, { prefix: '/auth' });
+  await server.register(profileRoutes, { prefix: '/profiles' });
+  await server.register(friendRoutes, { prefix: '/friends' });
+  await server.register(trackRoutes, { prefix: '/tracks' });
+  await server.register(spaceRoutes, { prefix: '/spaces' });
 
   return server;
 };

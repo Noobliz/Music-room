@@ -1,0 +1,21 @@
+meta {
+  name: Remove a friend
+  type: http
+  seq: 7
+}
+
+delete {
+  url: {{baseUrl}}/friends/{{friendUserId}}
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{accessToken}}
+}
+
+tests {
+  test("returns HTTP 204", () => {
+    expect(res.status).to.equal(204);
+  });
+}

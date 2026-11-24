@@ -4,7 +4,7 @@ const emailSchema = z.string().trim().toLowerCase().email().max(254).describe('A
 
 const passwordSchema = z.string().min(6).max(72).describe('Password, 6 to 72 characters');
 
-const usernameSchema = z
+export const usernameSchema = z
   .string()
   .trim()
   .regex(/^[a-zA-Z0-9_.]{3,30}$/, 'Must be 3 to 30 letters, digits, "_" or "."')

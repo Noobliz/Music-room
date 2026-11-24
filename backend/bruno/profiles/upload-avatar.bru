@@ -1,0 +1,25 @@
+meta {
+  name: Upload avatar
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{baseUrl}}/profiles/me/avatar
+  body: file
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{accessToken}}
+}
+
+body:file {
+  file: @file(profiles/avatar.png) @contentType(image/png)
+}
+
+tests {
+  test("returns HTTP 200", () => {
+    expect(res.status).to.equal(200);
+  });
+}

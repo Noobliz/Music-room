@@ -15,6 +15,62 @@
       "when": 1790885642123,
       "tag": "20261001201402_profiles_auth_triggers",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792268845420,
+      "tag": "20261017202725_avatars_storage",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792334435064,
+      "tag": "20261018144035_create_friendships",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792334440072,
+      "tag": "20261018144040_friendships_functions",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794473574197,
+      "tag": "20261112085254_create_tracks",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794473582537,
+      "tag": "20261112085302_tracks_storage",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1794575328832,
+      "tag": "20261113130848_create_spaces",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1794575334427,
+      "tag": "20261113130854_spaces_functions",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1794575350032,
+      "tag": "20261113130910_spaces_policies",
+      "breakpoints": true
     }
   ]
 }

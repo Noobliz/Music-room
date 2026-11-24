@@ -1,0 +1,21 @@
+meta {
+  name: List my spaces
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/spaces/mine
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{accessToken}}
+}
+
+tests {
+  test("returns HTTP 200", () => {
+    expect(res.status).to.equal(200);
+  });
+}

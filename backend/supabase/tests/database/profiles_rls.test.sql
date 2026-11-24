@@ -21,7 +21,7 @@ select policy_roles_are('public', 'profiles', 'owner can update own profile', ar
 select is(
   public.are_friends('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'),
   false,
-  'are_friends is a stub returning false'
+  'are_friends is false for users who are not friends'
 );
 
 -- Authenticated as alice

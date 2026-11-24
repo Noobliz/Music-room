@@ -1,0 +1,31 @@
+meta {
+  name: Owner cannot invite the friend twice
+  type: http
+  seq: 16
+}
+
+post {
+  url: {{baseUrl}}/spaces/{{spaceId}}/invitations
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{ownerToken}}
+}
+
+body:json {
+  {
+    "userId": "{{friendUserId}}"
+  }
+}
+
+tests {
+  test("returns HTTP 409", () => {
+    expect(res.status).to.equal(409);
+  });
+
+  test("returns ALREADY_INVITED", () => {
+    expect(res.body.error.code).to.equal("ALREADY_INVITED");
+  });
+}

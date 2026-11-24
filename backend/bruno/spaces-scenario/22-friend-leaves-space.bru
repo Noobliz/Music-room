@@ -1,0 +1,21 @@
+meta {
+  name: Friend leaves the space
+  type: http
+  seq: 22
+}
+
+delete {
+  url: {{baseUrl}}/spaces/{{spaceId}}/invitations/{{friendUserId}}
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{friendToken}}
+}
+
+tests {
+  test("returns HTTP 204", () => {
+    expect(res.status).to.equal(204);
+  });
+}

@@ -1,0 +1,25 @@
+meta {
+  name: Owner sees the invitation was revoked
+  type: http
+  seq: 27
+}
+
+get {
+  url: {{baseUrl}}/spaces/{{spaceId}}/invitations
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{ownerToken}}
+}
+
+tests {
+  test("returns HTTP 200", () => {
+    expect(res.status).to.equal(200);
+  });
+
+  test("no longer lists the ex-friend", () => {
+    expect(res.body.map((invitation) => invitation.user.id)).to.not.include(bru.getVar("friendUserId"));
+  });
+}
