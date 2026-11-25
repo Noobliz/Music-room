@@ -1,6 +1,6 @@
 import { type Space } from '../db/schema.js';
 import { AppError } from '../errors/app-error.js';
-import { findSpaceForUser, type SpaceRow } from '../models/space.model.js';
+import { findSpaceForUser, type DbExecutor, type SpaceRow } from '../models/space.model.js';
 import { type SpaceRole } from '../schemas/space.schema.js';
 import { type AuthContext } from './token.service.js';
 
@@ -30,8 +30,9 @@ export const resolveAccess = (
 export const requireViewableSpace = async (
   { userId }: AuthContext,
   spaceId: string,
+  executor?: DbExecutor,
 ): Promise<AccessibleSpace> => {
-  const space = await findSpaceForUser(spaceId, userId);
+  const space = await findSpaceForUser(spaceId, userId, executor);
   const access = space && resolveAccess(space, userId, space.isInvited);
   if (!space || !access?.canView) {
     throw new AppError(404, 'SPACE_NOT_FOUND', `No space with id ${spaceId}`);

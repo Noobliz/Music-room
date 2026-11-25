@@ -13,14 +13,33 @@ export const proposeTrack = async (
 ) =>
   reply
     .status(201)
-    .send(await trackVote.proposeTrack(request.auth, request.params.id, request.body.trackId));
+    .send(
+      await trackVote.proposeTrack(
+        request.log,
+        request.auth,
+        request.params.id,
+        request.body.trackId,
+      ),
+    );
 
 type VoteRequest = FastifyRequest<{ Params: z.infer<typeof proposalParams> }>;
 export const vote = async (request: VoteRequest, reply: FastifyReply) => {
-  await trackVote.setVote(request.auth, request.params.id, request.params.proposalId, true);
+  await trackVote.setVote(
+    request.log,
+    request.auth,
+    request.params.id,
+    request.params.proposalId,
+    true,
+  );
   return reply.status(204).send();
 };
 export const removeVote = async (request: VoteRequest, reply: FastifyReply) => {
-  await trackVote.setVote(request.auth, request.params.id, request.params.proposalId, false);
+  await trackVote.setVote(
+    request.log,
+    request.auth,
+    request.params.id,
+    request.params.proposalId,
+    false,
+  );
   return reply.status(204).send();
 };

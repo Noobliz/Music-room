@@ -1,4 +1,4 @@
-import { randomBytes } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
 
 import { inArray, sql } from 'drizzle-orm';
 import { authUsers } from 'drizzle-orm/supabase';
@@ -7,6 +7,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type WebSocket } from 'ws';
 
 import { closeDatabaseConnection, db } from '../src/db/client.js';
+import { tracks } from '../src/db/schema.js';
 import { type AuthResponse } from '../src/schemas/auth.schema.js';
 import { type ServerMessage } from '../src/schemas/realtime.schema.js';
 import { type SpaceView } from '../src/schemas/space.schema.js';
@@ -168,5 +169,98 @@ describe('realtime', () => {
 
     owner.socket.terminate();
     guest.socket.terminate();
+  });
+
+  it('publishes the committed queue in vote order with the vote of each subscriber', async () => {
+    const space = await createSpace(alice, { kind: 'event', name: 'Live votes' });
+    const owner = await connect(alice);
+    const guest = await connect(bob);
+    const trackIds = [randomUUID(), randomUUID()];
+    const url = `/spaces/${space.id}`;
+    const headers = bearer(alice.session.accessToken);
+    const propose = (trackId: string) =>
+      server.inject({
+        method: 'POST',
+        url: url + '/proposals',
+        headers,
+        payload: { trackId },
+      });
+    try {
+      await db.insert(tracks).values(
+        trackIds.map((id) => ({
+          id,
+          title: 'Live track',
+          artist: 'Test',
+          durationMs: 1000,
+          audioPath: id,
+          contentHash: id,
+        })),
+      );
+      for (const client of [owner, guest]) {
+        client.send({ type: 'subscribe', spaceId: space.id });
+        expect(await client.next()).toMatchObject({ type: 'subscribed', version: 1 });
+      }
+      const proposalIds: string[] = [];
+      for (const trackId of trackIds) {
+        const res = await propose(trackId);
+        expect(res.statusCode).toBe(201);
+        proposalIds.push(res.json().id);
+        for (const client of [owner, guest]) {
+          expect(await client.next()).toMatchObject({
+            type: 'queue.updated',
+            spaceId: space.id,
+            version: 1 + proposalIds.length,
+            data: { items: proposalIds.map((id) => ({ id, voteCount: 0, hasVoted: false })) },
+          });
+        }
+      }
+      const [first, second] = proposalIds;
+      const voteUrl = `${url}/proposals/${second}/vote`;
+      expect((await propose(trackIds[1]!)).statusCode).toBe(409);
+      const votes = await Promise.all(
+        [1, 2].map(() => server.inject({ method: 'PUT', url: voteUrl, headers })),
+      );
+      expect(votes.map((v) => v.statusCode)).toEqual([204, 204]);
+      for (const [client, user] of [
+        [owner, alice],
+        [guest, bob],
+      ] as const) {
+        const update = await client.next();
+        const queue = (
+          await server.inject({ url: url + '/queue', headers: bearer(user.session.accessToken) })
+        ).json();
+        expect(update).toEqual({
+          type: 'queue.updated',
+          spaceId: space.id,
+          version: queue.version,
+          data: { items: queue.items },
+        });
+        expect(queue).toMatchObject({
+          version: 4,
+          items: [
+            { id: second, voteCount: 1, hasVoted: user === alice },
+            { id: first, voteCount: 0, hasVoted: false },
+          ],
+        });
+      }
+      expect((await server.inject({ method: 'DELETE', url: voteUrl, headers })).statusCode).toBe(
+        204,
+      );
+      for (const client of [owner, guest]) {
+        expect(await client.next()).toMatchObject({
+          type: 'queue.updated',
+          version: 5,
+          data: { items: proposalIds.map((id) => ({ id, voteCount: 0, hasVoted: false })) },
+        });
+      }
+      expect((await server.inject({ method: 'DELETE', url: voteUrl, headers })).statusCode).toBe(
+        204,
+      );
+      expect((await server.inject({ url: url + '/queue', headers })).json().version).toBe(5);
+    } finally {
+      owner.socket.terminate();
+      guest.socket.terminate();
+      await db.delete(tracks).where(inArray(tracks.id, trackIds));
+    }
   });
 });

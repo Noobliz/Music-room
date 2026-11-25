@@ -6,6 +6,7 @@ export const proposalParams = spaceIdParamsSchema.extend({ proposalId: z.string(
 export const proposeTrackBody = z.object({ trackId: z.string().uuid() }).strict();
 export const proposalCreated = z.object({ id: z.string().uuid() });
 export const queueSchema = z.object({
+  version: z.number().int().positive(),
   items: z.array(
     proposalCreated.extend({
       track: trackSchema,
@@ -16,3 +17,5 @@ export const queueSchema = z.object({
     }),
   ),
 });
+
+export type EventQueue = z.infer<typeof queueSchema>;

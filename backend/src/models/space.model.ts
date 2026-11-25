@@ -50,8 +50,8 @@ const userColumns = {
 const isInvited = (userId: string): SQL<boolean> =>
   sql<boolean>`exists (select 1 from ${spaceInvitations} where ${spaceInvitations.spaceId} = ${spaces.id} and ${spaceInvitations.userId} = ${userId})`;
 
-const selectSpaces = (userId: string) =>
-  db
+const selectSpaces = (userId: string, executor: DbExecutor = db) =>
+  executor
     .select({ ...getTableColumns(spaces), owner: userColumns, isInvited: isInvited(userId) })
     .from(spaces)
     .innerJoin(profiles, eq(profiles.id, spaces.ownerId));
@@ -76,8 +76,9 @@ const searchOrder = (query: string | undefined): SQL[] => {
 export const findSpaceForUser = async (
   spaceId: string,
   userId: string,
+  executor: DbExecutor = db,
 ): Promise<SpaceRow | undefined> => {
-  const [space] = await selectSpaces(userId).where(eq(spaces.id, spaceId)).limit(1);
+  const [space] = await selectSpaces(userId, executor).where(eq(spaces.id, spaceId)).limit(1);
   return space;
 };
 

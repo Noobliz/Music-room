@@ -4,12 +4,14 @@ import { db } from '../db/client.js';
 import {
   eventTrackProposals as proposals,
   eventTrackVotes as votes,
+  spaces,
   tracks,
 } from '../db/schema.js';
+import { type DbExecutor } from './space.model.js';
 
-export const selectQueue = (spaceId: string, userId: string) => {
+export const selectQueue = (executor: DbExecutor, spaceId: string, userId: string) => {
   const voteCount = count(votes.userId);
-  return db
+  return executor
     .select({
       id: proposals.id,
       track: tracks,
@@ -26,14 +28,22 @@ export const selectQueue = (spaceId: string, userId: string) => {
     .orderBy(desc(voteCount), asc(proposals.createdAt), asc(proposals.id));
 };
 
-export const insertProposal = async (spaceId: string, trackId: string, proposedBy: string) => {
-  const [proposal] = await db
-    .insert(proposals)
-    .values({ spaceId, trackId, proposedBy })
-    .onConflictDoNothing()
-    .returning({ id: proposals.id });
-  return proposal;
-};
+const incrementVersion = (tx: Pick<typeof db, 'update'>, spaceId: string) =>
+  tx
+    .update(spaces)
+    .set({ version: sql`${spaces.version} + 1` })
+    .where(eq(spaces.id, spaceId));
+
+export const insertProposal = (spaceId: string, trackId: string, proposedBy: string) =>
+  db.transaction(async (tx) => {
+    const [proposal] = await tx
+      .insert(proposals)
+      .values({ spaceId, trackId, proposedBy })
+      .onConflictDoNothing()
+      .returning({ id: proposals.id });
+    if (proposal) await incrementVersion(tx, spaceId);
+    return proposal;
+  });
 
 export const setQueuedVote = (
   spaceId: string,
@@ -53,11 +63,12 @@ export const setQueuedVote = (
         ),
       )
       .for('share');
-    if (!proposal) return false;
-    if (voted) {
-      await tx.insert(votes).values({ proposalId, userId }).onConflictDoNothing();
-    } else {
-      await tx.delete(votes).where(and(eq(votes.proposalId, proposalId), eq(votes.userId, userId)));
-    }
-    return true;
+    if (!proposal) return 'missing';
+    const mutation = voted
+      ? tx.insert(votes).values({ proposalId, userId }).onConflictDoNothing()
+      : tx.delete(votes).where(and(eq(votes.proposalId, proposalId), eq(votes.userId, userId)));
+    const changed = await mutation.returning();
+    if (changed.length === 0) return 'unchanged';
+    await incrementVersion(tx, spaceId);
+    return 'changed';
   });

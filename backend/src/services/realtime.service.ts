@@ -51,6 +51,9 @@ export const subscribersOf = (spaceId: string): [RealtimeConnection, SpaceAccess
   ...(subscriptions.get(spaceId) ?? []),
 ];
 
+export const isSubscribed = (connection: RealtimeConnection, spaceId: string): boolean =>
+  subscriptions.get(spaceId)?.has(connection) ?? false;
+
 export const updateSubscriberAccess = (
   connection: RealtimeConnection,
   spaceId: string,
