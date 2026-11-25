@@ -17,6 +17,7 @@ import { profileRoutes } from './routes/profiles.routes.js';
 import { realtimeRoutes } from './routes/realtime.routes.js';
 import { spaceRoutes } from './routes/spaces.routes.js';
 import { trackRoutes } from './routes/tracks.routes.js';
+import { trackVoteRoutes } from './routes/track-vote.routes.js';
 
 export const buildServer = async () => {
   const server = Fastify({
@@ -34,6 +35,7 @@ export const buildServer = async () => {
       },
       tags: [
         { name: 'system', description: 'Service status' },
+        { name: 'track-vote', description: 'Event queues, track proposals and votes' },
         {
           name: 'auth',
           description: 'Email, password and Google authentication, linked login methods',
@@ -84,6 +86,7 @@ export const buildServer = async () => {
   await server.register(friendRoutes, { prefix: '/friends' });
   await server.register(trackRoutes, { prefix: '/tracks' });
   await server.register(spaceRoutes, { prefix: '/spaces' });
+  await server.register(trackVoteRoutes, { prefix: '/spaces' });
   await server.register(realtimeRoutes, { prefix: '/realtime' });
 
   return server;

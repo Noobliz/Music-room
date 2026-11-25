@@ -26,6 +26,7 @@
     "catalog:import": "tsx scripts/import-catalog.ts"
   },
   "dependencies": {
+    "@fastify/rate-limit": "^10.3.0",
     "@fastify/swagger": "^9.8.1",
     "@fastify/swagger-ui": "^6.1.1",
     "@fastify/websocket": "^11.3.7",
