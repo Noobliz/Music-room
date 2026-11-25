@@ -3,7 +3,9 @@ import { and, eq, ne, sql } from 'drizzle-orm';
 import { db } from '../db/client.js';
 import { profiles, type Profile } from '../db/schema.js';
 
-export type ProfileChanges = Partial<Pick<Profile, 'username' | 'bio' | 'avatarUrl'>>;
+export type ProfileChanges = Partial<
+  Pick<Profile, 'username' | 'bio' | 'avatarUrl' | 'musicGenres' | 'fullName' | 'birthDate'>
+>;
 
 export const findProfileById = async (id: string): Promise<Profile | undefined> => {
   const [profile] = await db.select().from(profiles).where(eq(profiles.id, id)).limit(1);

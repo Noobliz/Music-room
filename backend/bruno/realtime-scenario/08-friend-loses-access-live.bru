@@ -1,0 +1,56 @@
+meta {
+  name: Friend loses access live when the playlist turns private
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{baseUrl}}/spaces/{{spaceId}}
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{friendToken}}
+}
+
+script:pre-request {
+  const { listen, call } = require(`${bru.cwd()}/realtime-scenario/realtime.js`);
+  const baseUrl = bru.interpolate("{{baseUrl}}");
+  const spaceId = bru.getVar("spaceId");
+  const owner = await listen(baseUrl, bru.getVar("ownerToken"), spaceId);
+  const friend = await listen(baseUrl, bru.getVar("friendToken"), spaceId);
+  try {
+    await owner.next();
+    await friend.next();
+    await call(baseUrl, bru.getVar("ownerToken"), "PATCH", `/spaces/${spaceId}`, {
+      visibility: "private",
+    });
+    bru.setVar(
+      "realtimeEvents",
+      JSON.stringify({ friend: await friend.next(), owner: await owner.next() }),
+    );
+  } finally {
+    owner.close();
+    friend.close();
+  }
+}
+
+tests {
+  const events = JSON.parse(bru.getVar("realtimeEvents"));
+
+  test("the friend receives space.access_revoked at version 3", () => {
+    expect(events.friend.type).to.equal("space.access_revoked");
+    expect(events.friend.version).to.equal(3);
+    expect(events.friend.data).to.equal(null);
+  });
+
+  test("the owner receives the private playlist", () => {
+    expect(events.owner.type).to.equal("space.updated");
+    expect(events.owner.data.visibility).to.equal("private");
+  });
+
+  test("the friend can no longer open it in REST", () => {
+    expect(res.status).to.equal(404);
+  });
+}

@@ -16,7 +16,7 @@ export const removeFriend = async (
   request: FastifyRequest<{ Params: FriendUserIdParams }>,
   reply: FastifyReply,
 ) => {
-  await friendService.removeFriend(request.auth, request.params.userId);
+  await friendService.removeFriend(request.log, request.auth, request.params.userId);
   return reply.status(204).send();
 };
 

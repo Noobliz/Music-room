@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm';
 import {
   check,
   index,
+  integer,
   pgEnum,
   pgPolicy,
   pgTable,
@@ -28,6 +29,7 @@ export const spaces = pgTable(
     description: text('description'),
     visibility: spaceVisibility('visibility').notNull().default('public'),
     accessMode: spaceAccessMode('access_mode').notNull().default('everyone'),
+    version: integer('version').notNull().default(1),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },

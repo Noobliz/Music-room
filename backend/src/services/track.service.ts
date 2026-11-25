@@ -1,3 +1,5 @@
+import { StorageApiError } from '@supabase/supabase-js';
+
 import { type Track } from '../db/schema.js';
 import { AppError } from '../errors/app-error.js';
 import { createSupabaseClient, createSupabaseClientAsUser } from '../lib/supabase.js';
@@ -32,10 +34,13 @@ const toTrackView = (track: Track): TrackView => ({
   attribution: track.attribution,
 });
 
+const trackNotFound = (id: string): AppError =>
+  new AppError(404, 'TRACK_NOT_FOUND', `No track with id ${id}`);
+
 const requireTrack = async (id: string): Promise<Track> => {
   const track = await findTrackById(id);
   if (!track) {
-    throw new AppError(404, 'TRACK_NOT_FOUND', `No track with id ${id}`);
+    throw trackNotFound(id);
   }
   return track;
 };
@@ -61,6 +66,9 @@ export const getTrackStream = async (
   const { data, error } = await createSupabaseClientAsUser(accessToken)
     .storage.from(TRACKS_BUCKET)
     .createSignedUrl(track.audioPath, lifetime);
+  if (error instanceof StorageApiError && error.code === 'NoSuchKey') {
+    throw trackNotFound(id);
+  }
   if (error) {
     throw error;
   }

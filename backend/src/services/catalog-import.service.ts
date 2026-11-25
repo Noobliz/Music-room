@@ -7,7 +7,7 @@ import { parseBuffer, selectCover } from 'music-metadata';
 import { z } from 'zod';
 
 import { createSupabaseAdminClient } from '../lib/supabase.js';
-import { findTrackIdByContentHash, upsertTrack } from '../models/track.model.js';
+import { upsertTrack } from '../models/track.model.js';
 import { COVERS_BUCKET, TRACKS_BUCKET } from './track.service.js';
 
 export const CATALOG_MANIFEST = 'catalog.json';
@@ -154,9 +154,7 @@ const importTrack = async (
 
   const contentHash = sha256(audio);
   const audioPath = `${contentHash}.mp3`;
-  if (!(await findTrackIdByContentHash(contentHash))) {
-    await upload(storage, TRACKS_BUCKET, audioPath, audio, 'audio/mpeg');
-  }
+  await upload(storage, TRACKS_BUCKET, audioPath, audio, 'audio/mpeg');
 
   const { inserted } = await upsertTrack({
     title: entry?.title ?? (metadata.common.title?.trim() || basename(file, extname(file))),

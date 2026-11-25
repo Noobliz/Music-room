@@ -34,7 +34,7 @@ export const getSpace = async (request: FastifyRequest<{ Params: SpaceIdParams }
 export const updateSpace = async (
   request: FastifyRequest<{ Params: SpaceIdParams; Body: UpdateSpaceBody }>,
 ) => {
-  return spaceService.updateSpace(request.auth, request.params.id, request.body);
+  return spaceService.updateSpace(request.log, request.auth, request.params.id, request.body);
 };
 
 export const deleteSpace = async (
@@ -54,6 +54,7 @@ export const inviteToSpace = async (
   reply: FastifyReply,
 ) => {
   const invitation = await spaceService.inviteToSpace(
+    request.log,
     request.auth,
     request.params.id,
     request.body.userId,
@@ -65,6 +66,11 @@ export const removeInvitation = async (
   request: FastifyRequest<{ Params: SpaceInvitationParams }>,
   reply: FastifyReply,
 ) => {
-  await spaceService.removeInvitation(request.auth, request.params.id, request.params.userId);
+  await spaceService.removeInvitation(
+    request.log,
+    request.auth,
+    request.params.id,
+    request.params.userId,
+  );
   return reply.status(204).send();
 };

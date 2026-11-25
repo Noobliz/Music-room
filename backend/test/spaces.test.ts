@@ -126,9 +126,7 @@ describe('spaces', () => {
         .map((invitation) => invitation.user.id),
     ).toEqual([bob.user.id]);
     expect(
-      (await as(bob).get('/spaces/mine?kind=playlist'))
-        .json<SpacePage>()
-        .items.map((s) => s.id),
+      (await as(bob).get('/spaces/mine?kind=playlist')).json<SpacePage>().items.map((s) => s.id),
     ).toContain(space.id);
     expect((await as(bob).get(`/spaces/${space.id}`)).json<SpaceView>()).toMatchObject({
       myRole: 'invited',
@@ -201,9 +199,9 @@ describe('spaces', () => {
 
     expect((await as(frank).get(`/spaces/${erinSpace.id}`)).statusCode).toBe(404);
     expect((await as(erin).get(`/spaces/${frankSpace.id}`)).statusCode).toBe(404);
-    expect((await as(erin).get('/spaces/mine')).json<SpacePage>().items.map((s) => s.id)).toEqual(
-      [erinSpace.id],
-    );
+    expect((await as(erin).get('/spaces/mine')).json<SpacePage>().items.map((s) => s.id)).toEqual([
+      erinSpace.id,
+    ]);
   });
 
   it('sorts the search by exact match, then prefix, then name, and paginates it', async () => {

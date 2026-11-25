@@ -56,17 +56,6 @@ export const findTrackById = async (id: string): Promise<Track | undefined> => {
   return track;
 };
 
-export const findTrackIdByContentHash = async (
-  contentHash: string,
-): Promise<string | undefined> => {
-  const [track] = await db
-    .select({ id: tracks.id })
-    .from(tracks)
-    .where(eq(tracks.contentHash, contentHash))
-    .limit(1);
-  return track?.id;
-};
-
 export const upsertTrack = async (values: NewTrack): Promise<{ id: string; inserted: boolean }> => {
   const { contentHash: _contentHash, ...changes } = values;
   const [row] = await db

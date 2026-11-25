@@ -1,0 +1,33 @@
+meta {
+  name: Connection without a valid token is refused
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/realtime
+  body: none
+  auth: none
+}
+
+script:pre-request {
+  const { connect } = require(`${bru.cwd()}/realtime-scenario/realtime.js`);
+  try {
+    const client = await connect(bru.interpolate("{{baseUrl}}"), "not-a-jwt");
+    client.close();
+    bru.setVar("invalidTokenHandshake", "accepted");
+  } catch (error) {
+    bru.setVar("invalidTokenHandshake", error.message);
+  }
+}
+
+tests {
+  test("refuses the connection without token with HTTP 401", () => {
+    expect(res.status).to.equal(401);
+    expect(res.body.error.code).to.equal("TOKEN_MISSING");
+  });
+
+  test("refuses the WebSocket handshake with an invalid token", () => {
+    expect(bru.getVar("invalidTokenHandshake")).to.contain("401");
+  });
+}
