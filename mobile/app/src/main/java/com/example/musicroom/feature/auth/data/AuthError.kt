@@ -26,4 +26,6 @@ sealed interface AuthError {
 
     data object NoGoogleAccount : AuthError
 
+    data object ProfileNotFound : AuthError
+
 }

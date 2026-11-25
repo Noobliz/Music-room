@@ -13,5 +13,6 @@ fun ErrorBody.toAuthError(httpCode: Int): AuthError =
         "LAST_IDENTITY" -> AuthError.LastIdentity
         "IDENTITY_NOT_FOUND" -> AuthError.IdentityNotFound
         "IDENTITY_NOT_DELETABLE" -> AuthError.IdentityNotDeletable
+        "PROFILE_NOT_FOUND" -> AuthError.ProfileNotFound
         else -> AuthError.Unknown(httpCode)
     }

@@ -41,7 +41,6 @@ interface AuthApiService {
     @POST("auth/password/reset")
     suspend fun resetPassword(@Body request: ResetPasswordRequest): Response<Unit>
 
-
     @POST("auth/oauth/google")
     suspend fun signInWithGoogle(@Body request: IdTokenRequest): Response<OAuthResponse>
 

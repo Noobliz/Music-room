@@ -1,11 +1,11 @@
 package com.example.musicroom.feature.auth.data
 
+import com.example.musicroom.core.network.safeApiCall
 import com.example.musicroom.core.session.SessionManager
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import java.io.IOException
-import retrofit2.Response
+
 
 class AuthRepository(
     private val api: AuthApiService,
@@ -17,54 +17,18 @@ class AuthRepository(
     val currentUser: StateFlow<AuthUser?> = sessionManager.currentUser
 
 
-    private fun parseError(response: Response<*>): AuthError {
-        val raw: String? = response.errorBody()?.string()
-        if (raw == null) {
-            return (AuthError.Unknown(response.code()))
-        }
-        return try {
-            val res: ErrorResponse = json.decodeFromString<ErrorResponse>(raw)
-            res.error.toAuthError(response.code())
-        } catch (e: SerializationException) {
-            AuthError.Unknown(response.code())
-        }
-    }
-
-    private suspend fun <T> execute(
-        emptyBody: T? = null,
-        call: suspend () -> Response<T>
-    ): AuthResult<T> {
-
-        return try {
-            val response: Response<T> = call()
-            if (response.isSuccessful) {
-                val data: T? = response.body() ?: emptyBody
-                if (data != null) {
-                    AuthResult.Success(data)
-                } else AuthResult.Failure(AuthError.Unknown(response.code()))
-            } else AuthResult.Failure(parseError(response))
-        } catch (e: IOException) {
-            AuthResult.Failure(AuthError.Network)
-        } catch (e: SerializationException) {
-            AuthResult.Failure(AuthError.Unknown(null))
-        }
-    }
-
     suspend fun signup(
         email: String,
         password: String,
         username: String
     ): AuthResult<SignupResponse> =
-        execute(
-            null,
-            { api.signup(SignupRequest(email, password, username)) },
-        )
+        safeApiCall(json) { api.signup(SignupRequest(email, password, username)) }
+
 
     suspend fun login(email: String, password: String): AuthResult<AuthResponse> {
-        val res: AuthResult<AuthResponse> = execute(
-            null,
-            { api.login(LoginRequest(email, password)) },
-        )
+        val res: AuthResult<AuthResponse> =
+            safeApiCall(json) { api.login(LoginRequest(email, password)) }
+
         if (res is AuthResult.Success) {
             sessionManager.onAuthenticated(res.data)
         }
@@ -72,7 +36,14 @@ class AuthRepository(
     }
 
     suspend fun resetPassword(tokenHash: String, password: String): AuthResult<Unit> {
-        val res: AuthResult<Unit> = execute(emptyBody = Unit, { api.resetPassword(ResetPasswordRequest(tokenHash, password)) })
+        val res: AuthResult<Unit> = safeApiCall(json, emptyBody = Unit) {
+            api.resetPassword(
+                ResetPasswordRequest(
+                    tokenHash,
+                    password
+                )
+            )
+        }
         // Le serveur ferme toutes les sessions après un reset
         if (res is AuthResult.Success) {
             sessionManager.clear()
@@ -84,7 +55,7 @@ class AuthRepository(
     suspend fun verifyEmail(tokenHash: String):
             AuthResult<AuthResponse> {
         val res: AuthResult<AuthResponse> =
-            execute(null, { api.verifyEmail(VerifyEmailRequest(tokenHash)) })
+            safeApiCall(json) { api.verifyEmail(VerifyEmailRequest(tokenHash)) }
         if (res is AuthResult.Success) {
             sessionManager.onAuthenticated(res.data)
         }
@@ -94,10 +65,10 @@ class AuthRepository(
 
     suspend fun resendEmail(email: String):
             AuthResult<Unit> =
-        execute(null, { api.resendEmail(ResendEmailRequest(email)) })
+        safeApiCall(json) { api.resendEmail(ResendEmailRequest(email)) }
 
     suspend fun forgotPassword(email: String): AuthResult<Unit> =
-        execute(null, { api.forgotPassword(ForgotPasswordRequest(email)) })
+        safeApiCall(json) { api.forgotPassword(ForgotPasswordRequest(email)) }
 
 
     suspend fun logout() {
@@ -111,7 +82,7 @@ class AuthRepository(
 
     suspend fun signInWithGoogle(idToken: String, nonce: String): AuthResult<OAuthResponse> {
         val res: AuthResult<OAuthResponse> =
-            execute { api.signInWithGoogle(IdTokenRequest(idToken, nonce)) }
+            safeApiCall(json) { api.signInWithGoogle(IdTokenRequest(idToken, nonce)) }
         if (res is AuthResult.Success) {
             sessionManager.onAuthenticated(res.data.toAuthResponse())
         }
@@ -119,11 +90,11 @@ class AuthRepository(
     }
 
     suspend fun listIdentities(): AuthResult<IdentitiesResponse> =
-        execute { authenticatedApi.listIdentities() }
+        safeApiCall(json) { authenticatedApi.listIdentities() }
 
     suspend fun linkGoogle(idToken: String, nonce: String): AuthResult<IdentitiesResponse> =
-        execute { authenticatedApi.linkGoogle(IdTokenRequest(idToken, nonce)) }
+        safeApiCall(json) { authenticatedApi.linkGoogle(IdTokenRequest(idToken, nonce)) }
 
     suspend fun unlinkGoogle(): AuthResult<Unit> =
-        execute(emptyBody = Unit) { authenticatedApi.unlinkGoogle() }
+        safeApiCall(json, emptyBody = Unit) { authenticatedApi.unlinkGoogle() }
 }

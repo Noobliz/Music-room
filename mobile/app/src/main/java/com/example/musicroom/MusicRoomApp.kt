@@ -16,7 +16,7 @@ class MusicRoomApp: Application() {
     val authedRetrofit: Retrofit by lazy {
         ApiClient.authenticatedRetrofit(sessionManager)
     }
-    
+
     val authenticatedApi: AuthApiService by lazy {
         authedRetrofit.create(AuthApiService::class.java)
     }
