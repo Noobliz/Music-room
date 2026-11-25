@@ -30,6 +30,7 @@ fun HomeScreen(
     user: AuthUser,
     onLogoutClick: () -> Unit,
     onLinkedAccountsClick: () -> Unit,
+    onProfileClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val initial: String = user.username.firstOrNull()?.uppercase() ?: "?"
@@ -84,7 +85,16 @@ fun HomeScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(modifier = Modifier.height(28.dp))
-
+                OutlinedButton(
+                    onClick = onProfileClick,
+                    shape = MaterialTheme.shapes.large,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp)
+                ) {
+                    Text("Voir mon profil")
+                }
+                Spacer(modifier = Modifier.height(28.dp))
                 OutlinedButton(
                     onClick = onLinkedAccountsClick,
                     shape = MaterialTheme.shapes.large,

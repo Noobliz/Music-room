@@ -47,6 +47,8 @@ import com.example.musicroom.feature.home.ui.HomeScreen
 import com.example.musicroom.ui.theme.MusicroomTheme
 import kotlinx.coroutines.launch
 import androidx.activity.compose.BackHandler
+import com.example.musicroom.feature.profile.ui.ProfileScreen
+import com.example.musicroom.feature.profile.ui.ProfileViewModel
 
 class MainActivity : ComponentActivity() {
     private val loginViewModel: LoginViewModel by viewModels { LoginViewModel.Factory }
@@ -62,6 +64,8 @@ class MainActivity : ComponentActivity() {
     private val resetPasswordViewModel: ResetPasswordViewModel by viewModels { ResetPasswordViewModel.Factory }
 
     private val linkedAccountsViewModel: LinkedAccountsViewModel by viewModels { LinkedAccountsViewModel.Factory }
+
+    private val profileViewModel: ProfileViewModel by viewModels { ProfileViewModel.Factory }
     private val googleCredentialProvider: GoogleCredentialProvider = GoogleCredentialProvider()
     private val healthViewModel: HealthViewModel by viewModels()
 
@@ -82,6 +86,7 @@ class MainActivity : ComponentActivity() {
             var showSignup: Boolean by rememberSaveable { mutableStateOf(false) }
             var showForgotPassword: Boolean by rememberSaveable { mutableStateOf(false) }
             var showLinkedAccounts: Boolean by rememberSaveable { mutableStateOf(false) }
+            var showProfile: Boolean by rememberSaveable { mutableStateOf(false) }
             val currentUser: AuthUser? by mainViewModel.currentUser.collectAsState()
             MusicroomTheme {
                 LocalNetworkPermissionGate {
@@ -99,6 +104,8 @@ class MainActivity : ComponentActivity() {
                             if (user == null) {
                                 showLinkedAccounts = false
                                 linkedAccountsViewModel.reset()
+                                showProfile = false
+                                profileViewModel.reset()
                             }
                         }
                         if (deepLink is AuthDeepLink.VerifyEmail) {
@@ -166,22 +173,37 @@ class MainActivity : ComponentActivity() {
                                     onRetryClick = { linkedAccountsViewModel.load() },
                                     onLinkGoogleClick = {
                                         lifecycleScope.launch {
-                                            val res: GoogleCredentialResult = googleCredentialProvider.requestIdToken(this@MainActivity)
+                                            val res: GoogleCredentialResult =
+                                                googleCredentialProvider.requestIdToken(this@MainActivity)
                                             linkedAccountsViewModel.linkGoogle(res)
                                         }
                                     },
-                                    onUnlinkGoogleClick = {linkedAccountsViewModel.unlinkGoogle()},
-                                    onBackClick = {showLinkedAccounts = false },
+                                    onUnlinkGoogleClick = { linkedAccountsViewModel.unlinkGoogle() },
+                                    onBackClick = { showLinkedAccounts = false },
                                     modifier = Modifier.padding(innerPadding)
                                 )
-                            }
-                            else {
+                            } else if (showProfile) {
+                                LaunchedEffect(Unit) {
+                                    profileViewModel.load()
+                                }
+                                BackHandler {
+                                    showProfile = false
+                                }
+                                ProfileScreen(
+                                    state = profileViewModel.state,
+                                    onRetryClick = { profileViewModel.load() },
+                                    onEditClick = {},
+                                    onBackClick = { showProfile = false },
+                                    modifier = Modifier.padding(innerPadding)
+                                )
+                            } else {
                                 HomeScreen(
                                     user = user,
                                     onLogoutClick = {
                                         mainViewModel.logout()
                                     },
                                     onLinkedAccountsClick = { showLinkedAccounts = true },
+                                    onProfileClick = { showProfile = true },
                                     modifier = Modifier.padding(innerPadding),
                                 )
                             }
