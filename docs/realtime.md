@@ -40,7 +40,7 @@ Every message has the same four fields:
 | ---------------------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | `subscribed`           | `null`                                                                     | Answer to `subscribe`. `version` is the current version of the space                                                                   |
 | `space.updated`        | the space, same shape as `GET /spaces/:id` (with my `myRole` and `canAct`) | The owner changed the space, or my role in it changed (invited, invitation removed)                                                    |
-| `queue.updated`        | `{ "items": [...] }` with the same ordered items as `GET /spaces/:id/queue` | A track was proposed in the event, or a vote was added or removed |
+| `queue.updated`        | `{ "items": [...] }` with the same ordered items as `GET /spaces/:id/queue` | The ranked queue changed, including after a participant deleted their account |
 | `space.deleted`        | `null`                                                                     | The owner deleted the space. The subscription ends                                                                                     |
 | `space.access_revoked` | `null`                                                                     | I can no longer open the space (made private, invitation removed, friendship removed). The subscription ends                           |
 | `error`                | `{ "code": "...", "message": "..." }`                                      | The last client message was rejected: `VALIDATION_ERROR` (malformed message), `SPACE_NOT_FOUND`, `INTERNAL_ERROR`. `version` is `null` |
@@ -67,7 +67,7 @@ Each space has a `version` (also returned by the REST routes of the space) that 
   3. send `subscribe` again for each of them;
   4. if the `version` of `subscribed` is greater than the one loaded, reload once more.
 
-Subscriptions do not survive a reconnection.
+The server registers the subscription while holding the event version stable. A concurrent vote is reflected in the acknowledgement version or delivered to the registered subscriber. Space IDs in server messages use lowercase UUIDs.
 
 ## Example
 

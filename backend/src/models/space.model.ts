@@ -12,7 +12,7 @@ import {
   type SQL,
 } from 'drizzle-orm';
 
-import { db } from '../db/client.js';
+import { db, type DbTransaction } from '../db/client.js';
 import {
   type NewSpace,
   profiles,
@@ -82,20 +82,44 @@ export const findSpaceForUser = async (
   return space;
 };
 
+export const findLockedSpaceForUser = async (
+  tx: DbTransaction,
+  spaceId: string,
+  userId: string,
+  lock: 'share' | 'no key update',
+): Promise<SpaceRow | undefined> => {
+  const [space] = await tx
+    .select({ ...getTableColumns(spaces), owner: userColumns })
+    .from(spaces)
+    .innerJoin(profiles, eq(profiles.id, spaces.ownerId))
+    .where(eq(spaces.id, spaceId))
+    .for(lock, { of: spaces });
+  if (!space) return undefined;
+  const [invitation] = await tx
+    .select({ id: spaceInvitations.userId })
+    .from(spaceInvitations)
+    .where(and(eq(spaceInvitations.spaceId, spaceId), eq(spaceInvitations.userId, userId)))
+    .for('share');
+  return { ...space, isInvited: Boolean(invitation) };
+};
+
 export const insertSpace = async (values: NewSpace): Promise<Space> => {
   const [space] = await db.insert(spaces).values(values).returning();
   return space as Space;
 };
 
-export const findSpaceMembers = async (spaceId: string): Promise<SpaceMembers | undefined> => {
+export const findSpaceMembers = async (
+  spaceId: string,
+  executor: DbExecutor = db,
+): Promise<SpaceMembers | undefined> => {
   const [[space], invitees] = await Promise.all([
-    db
+    executor
       .select({ ...getTableColumns(spaces), owner: userColumns })
       .from(spaces)
       .innerJoin(profiles, eq(profiles.id, spaces.ownerId))
       .where(eq(spaces.id, spaceId))
       .limit(1),
-    db
+    executor
       .select({ userId: spaceInvitations.userId })
       .from(spaceInvitations)
       .where(eq(spaceInvitations.spaceId, spaceId)),

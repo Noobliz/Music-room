@@ -1,5 +1,8 @@
 import { randomUUID } from 'node:crypto';
 
+import { type FastifyBaseLogger } from 'fastify';
+import { closeSpace } from './realtime.service.js';
+import { publishQueue } from './track-vote.service.js';
 import { isUniqueViolation } from '../db/errors.js';
 import { type Profile } from '../db/schema.js';
 import { AppError } from '../errors/app-error.js';
@@ -179,7 +182,11 @@ export const removeAvatar = async (auth: AuthContext): Promise<void> => {
   await removeAvatarFiles(auth);
 };
 
-export const deleteAccount = async (auth: AuthContext): Promise<void> => {
+export const deleteAccount = async (log: FastifyBaseLogger, auth: AuthContext): Promise<void> => {
   await removeAvatarFiles(auth);
-  await deleteUserById(auth.userId);
+  const { changedQueues, deletedSpaces } = await deleteUserById(auth.userId);
+  for (const { id } of changedQueues) publishQueue(log, id);
+  for (const { id, version } of deletedSpaces) {
+    closeSpace(id, { type: 'space.deleted', spaceId: id, version: version + 1, data: null });
+  }
 };

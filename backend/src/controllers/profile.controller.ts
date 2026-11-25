@@ -12,7 +12,7 @@ export const updateOwnProfile = async (request: FastifyRequest<{ Body: UpdatePro
 };
 
 export const deleteAccount = async (request: FastifyRequest, reply: FastifyReply) => {
-  await profileService.deleteAccount(request.auth);
+  await profileService.deleteAccount(request.log, request.auth);
   return reply.status(204).send();
 };
 

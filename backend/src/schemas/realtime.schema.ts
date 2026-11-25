@@ -1,12 +1,12 @@
 import { z } from 'zod';
 
 import { type ErrorCode } from '../errors/error-codes.js';
-import { type SpaceView } from './space.schema.js';
+import { spaceIdSchema, type SpaceView } from './space.schema.js';
 import { type EventQueue } from './track-vote.schema.js';
 
 export const clientMessageSchema = z.discriminatedUnion('type', [
-  z.object({ type: z.literal('subscribe'), spaceId: z.string().uuid() }).strict(),
-  z.object({ type: z.literal('unsubscribe'), spaceId: z.string().uuid() }).strict(),
+  z.object({ type: z.literal('subscribe'), spaceId: spaceIdSchema }).strict(),
+  z.object({ type: z.literal('unsubscribe'), spaceId: spaceIdSchema }).strict(),
 ]);
 
 export type ClientMessage = z.infer<typeof clientMessageSchema>;

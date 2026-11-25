@@ -119,8 +119,10 @@ export const mySpacesQuerySchema = pageQuerySchema.extend({
   kind: spaceKindSchema.optional(),
 });
 
+export const spaceIdSchema = z.string().uuid().toLowerCase().describe('Space id');
+
 export const spaceIdParamsSchema = z.object({
-  id: z.string().uuid().describe('Space id'),
+  id: spaceIdSchema,
 });
 
 export const spaceInvitationParamsSchema = spaceIdParamsSchema.extend({
