@@ -7,6 +7,7 @@ import com.example.musicroom.core.storage.SessionStorage
 import com.example.musicroom.feature.auth.data.AuthApiService
 import com.example.musicroom.feature.auth.data.AuthRepository
 import com.example.musicroom.feature.profile.data.ProfileApiService
+import com.example.musicroom.feature.profile.data.ProfileRepository
 import retrofit2.Retrofit
 
 class MusicRoomApp: Application() {
@@ -26,6 +27,10 @@ class MusicRoomApp: Application() {
     }
     val authRepository: AuthRepository by lazy {
         AuthRepository(ApiClient.authApi, authenticatedApi, ApiClient.json, sessionManager)
+    }
+
+    val profileRepository: ProfileRepository by lazy {
+        ProfileRepository(profileApi, ApiClient.json)
     }
 
 }
