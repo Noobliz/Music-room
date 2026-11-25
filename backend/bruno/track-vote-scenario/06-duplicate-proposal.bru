@@ -1,0 +1,28 @@
+meta {
+  name: Friend proposes the same track
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/spaces/{{voteSpaceId}}/proposals
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{friendToken}}
+}
+
+body:json {
+  {
+    "trackId": "{{voteTrackId}}"
+  }
+}
+
+tests {
+  test("the duplicate is rejected", () => {
+    expect(res.status).to.equal(409);
+    expect(res.body.error.code).to.equal("TRACK_ALREADY_QUEUED");
+  });
+}

@@ -1,0 +1,56 @@
+meta {
+  name: Both users vote concurrently and friend receives the live queue
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/spaces/{{voteSpaceId}}/queue
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{friendToken}}
+}
+
+script:pre-request {
+  const { listen } = require(`${bru.cwd()}/realtime-scenario/realtime.js`);
+  const baseUrl = bru.interpolate("{{baseUrl}}");
+  const spaceId = bru.getVar("voteSpaceId");
+  const proposalId = bru.getVar("voteProposalId");
+  const friend = await listen(baseUrl, bru.getVar("friendToken"), spaceId);
+  try {
+    const subscribed = await friend.next();
+    if (subscribed.type !== "subscribed" || subscribed.version !== 2) {
+      throw new Error("Expected a subscription to the event at version 2");
+    }
+    const url = `${baseUrl}/spaces/${spaceId}/proposals/${proposalId}/vote`;
+    const responses = await Promise.all(["ownerToken", "friendToken"].map(key =>
+    bru.sendRequest({ method: "PUT", url, data: {}, headers: { Authorization: `Bearer ${bru.getVar(key)}` } })
+    ));
+    bru.setVar("voteStatuses", JSON.stringify(responses.map(r => r.status)));
+    let update = await friend.next();
+    if (update.type === "queue.updated" && update.version === 3) update = await friend.next();
+    bru.setVar("liveVoteQueue", JSON.stringify(update));
+  } finally {
+    friend.close();
+  }
+}
+
+tests {
+  test("both concurrent votes succeed", () => {
+    expect(JSON.parse(bru.getVar("voteStatuses"))).to.deep.equal([204, 204]);
+  });
+
+  test("the friend sees both votes in REST and on the WebSocket", () => {
+    expect(res.status).to.equal(200);
+    expect(res.body.version).to.equal(4);
+    expect(res.body.items).to.have.lengthOf(1);
+    expect(res.body.items[0]).to.include({ id: bru.getVar("voteProposalId"), voteCount: 2, hasVoted: true });
+    expect(res.body.items[0].track.id).to.equal(bru.getVar("voteTrackId"));
+    expect(JSON.parse(bru.getVar("liveVoteQueue"))).to.deep.equal({
+      type: "queue.updated", spaceId: bru.getVar("voteSpaceId"), version: 4, data: { items: res.body.items }
+    });
+  });
+}

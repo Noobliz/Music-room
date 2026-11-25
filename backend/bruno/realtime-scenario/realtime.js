@@ -2,7 +2,7 @@ const loadWebSocket = () => {
   try {
     return require('ws');
   } catch (error) {
-    if (typeof bru !== 'undefined' && bru.isSafeMode()) {
+    if (typeof bru !== 'undefined' && bru.isSafeMode?.()) {
       throw new Error(
         'The realtime scenario needs Developer Mode: click the shield icon of the collection and choose Developer Mode',
       );

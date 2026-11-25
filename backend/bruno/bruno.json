@@ -2,5 +2,8 @@
   "version": "1",
   "name": "Music Room API",
   "type": "collection",
-  "ignore": ["node_modules", ".git"]
+  "ignore": ["node_modules", ".git"],
+  "scripts": {
+    "moduleWhitelist": ["ws"]
+  }
 }
