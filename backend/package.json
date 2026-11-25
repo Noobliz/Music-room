@@ -20,7 +20,7 @@
     "db:start": "pnpm sync-local-config && supabase start",
     "db:stop": "supabase stop",
     "db:status": "supabase status",
-    "db:generate": "drizzle-kit generate",
+    "db:generate": "pnpm build && drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:test": "supabase test db",
     "catalog:import": "tsx scripts/import-catalog.ts"
