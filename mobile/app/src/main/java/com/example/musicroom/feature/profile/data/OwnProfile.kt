@@ -1,7 +1,7 @@
 package com.example.musicroom.feature.profile.data
 
 import kotlinx.serialization.Serializable
-// id, email, username, avatarUrl, bio, createdAt, updatedAt.
+
 @Serializable
 data class OwnProfile(
     val id: String,
@@ -9,7 +9,9 @@ data class OwnProfile(
     val username: String,
     val avatarUrl: String?,
     val bio: String?,
+    val musicGenres: List<MusicGenre>,
+    val fullName: String?,
+    val birthDate: String?, // "YYYY-MM-DD"
     val createdAt: String,
     val updatedAt: String,
-
 )

@@ -15,8 +15,24 @@ class ProfileRepository(
     suspend fun getMyProfile(): AuthResult<OwnProfile> =
         safeApiCall(json) { api.getMyProfile() }
 
-    suspend fun updateMyProfile(username: String? = null, bio: String? = null): AuthResult<OwnProfile> =
-        safeApiCall(json) { api.updateMyProfile(UpdateProfileRequest(username, bio)) }
+    suspend fun updateMyProfile(
+        username: String? = null,
+        bio: String? = null,
+        musicGenres: List<MusicGenre>? = null,
+        fullName: String? = null,
+        birthDate: String? = null
+    ): AuthResult<OwnProfile> =
+        safeApiCall(json) {
+            api.updateMyProfile(
+                UpdateProfileRequest(
+                    username = username,
+                    bio = bio,
+                    musicGenres = musicGenres,
+                    fullName = fullName,
+                    birthDate = birthDate
+                )
+            )
+        }
 
     suspend fun getProfile(userId: String): AuthResult<ProfileView> =
         safeApiCall(json) { api.getProfile(userId) }
