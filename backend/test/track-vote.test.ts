@@ -1,17 +1,18 @@
 import { randomUUID } from 'node:crypto';
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { authUsers } from 'drizzle-orm/supabase';
 import { type FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { db, closeDatabaseConnection } from '../src/db/client.js';
-import { tracks } from '../src/db/schema.js';
+import { eventTrackProposals, tracks } from '../src/db/schema.js';
 import { createSupabaseAdminClient } from '../src/lib/supabase.js';
 import { buildServer } from '../src/server.js';
 
 describe('Track Vote REST API', () => {
   let server: FastifyInstance;
   const trackId = randomUUID();
+  const secondTrackId = randomUUID();
   const userIds: string[] = [];
   const createParticipant = async () => {
     const email = `vote_${randomUUID()}@music-room.test`;
@@ -35,20 +36,86 @@ describe('Track Vote REST API', () => {
   beforeAll(async () => {
     server = await buildServer();
     server.log.level = 'silent';
-    await db.insert(tracks).values({
-      id: trackId,
-      title: 'Track Vote fixture',
-      artist: 'Artist',
-      durationMs: 1000,
-      audioPath: trackId,
-      contentHash: trackId,
-    });
+    await db.insert(tracks).values(
+      [trackId, secondTrackId].map((id) => ({
+        id,
+        title: 'Track Vote fixture',
+        artist: 'Artist',
+        durationMs: 1000,
+        audioPath: id,
+        contentHash: id,
+      })),
+    );
   });
   afterAll(async () => {
     for (const id of userIds) await db.delete(authUsers).where(eq(authUsers.id, id));
-    await db.delete(tracks).where(eq(tracks.id, trackId));
+    await db.delete(tracks).where(inArray(tracks.id, [trackId, secondTrackId]));
     await server.close();
     await closeDatabaseConnection();
+  });
+
+  it('accepts one competing proposal and counts every distinct concurrent voter once', async () => {
+    const voters = await Promise.all(Array.from({ length: 4 }, createParticipant));
+    const owner = voters[0]!;
+    const event = await server.inject({
+      method: 'POST',
+      url: '/spaces',
+      headers: owner,
+      payload: { kind: 'event', name: 'Concurrent votes' },
+    });
+    expect(event.statusCode).toBe(201);
+    const url = `/spaces/${event.json().id}`;
+    const proposals = await Promise.all(
+      voters.map((headers) =>
+        server.inject({
+          method: 'POST',
+          url: url + '/proposals',
+          headers,
+          payload: { trackId },
+        }),
+      ),
+    );
+    expect(proposals.map((r) => r.statusCode).sort()).toEqual([201, 409, 409, 409]);
+    const id = proposals.find((r) => r.statusCode === 201)!.json().id;
+    const vote = (headers: typeof owner, method: 'PUT' | 'DELETE') =>
+      server.inject({ method, headers, url: `${url}/proposals/${id}/vote` });
+    const checkQueue = async (
+      headers: typeof owner,
+      version: number,
+      voteCount: number,
+      hasVoted: boolean,
+    ) => {
+      const res = await server.inject({ url: url + '/queue', headers });
+      expect(res.statusCode).toBe(200);
+      expect(res.json()).toMatchObject({ version, items: [{ id, voteCount, hasVoted }] });
+    };
+    const added = await Promise.all(voters.map((headers) => vote(headers, 'PUT')));
+    expect(added.map((r) => r.statusCode)).toEqual([204, 204, 204, 204]);
+    await checkQueue(owner, 6, 4, true);
+    const removed = await Promise.all(voters.slice(1).map((headers) => vote(headers, 'DELETE')));
+    expect(removed.map((r) => r.statusCode)).toEqual([204, 204, 204]);
+    await checkQueue(owner, 9, 1, true);
+    await checkQueue(voters[1]!, 9, 1, false);
+  });
+
+  it('breaks ties by proposal ID when vote counts and timestamps match', async () => {
+    const headers = await createParticipant();
+    const event = await server.inject({
+      method: 'POST',
+      url: '/spaces',
+      headers,
+      payload: { kind: 'event', name: 'Tied tracks' },
+    });
+    expect(event.statusCode).toBe(201);
+    const { id: spaceId, owner } = event.json();
+    const ids = [randomUUID(), randomUUID()].sort();
+    const common = { spaceId, proposedBy: owner.id, createdAt: new Date() };
+    await db.insert(eventTrackProposals).values([
+      { ...common, id: ids[1], trackId },
+      { ...common, id: ids[0], trackId: secondTrackId },
+    ]);
+    const queue = await server.inject({ url: `/spaces/${spaceId}/queue`, headers });
+    expect(queue.json().items).toMatchObject(ids.map((id) => ({ id, voteCount: 0 })));
   });
 
   it('scopes proposals and votes to an actionable event and returns the caller’s vote', async () => {

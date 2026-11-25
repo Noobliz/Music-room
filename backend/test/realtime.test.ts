@@ -263,4 +263,103 @@ describe('realtime', () => {
       await db.delete(tracks).where(inArray(tracks.id, trackIds));
     }
   });
+
+  it('resyncs a private queue after reconnect and enforces invitation removal', async () => {
+    const space = await createSpace(alice, {
+      kind: 'event',
+      name: 'Private queue',
+      visibility: 'private',
+      accessMode: 'invited_only',
+    });
+    const url = `/spaces/${space.id}`;
+    const headers = bearer(bob.session.accessToken);
+    const owner = bearer(alice.session.accessToken);
+    const queue = () => server.inject({ url: url + '/queue', headers });
+    const trackId = randomUUID();
+    const propose = () =>
+      server.inject({ method: 'POST', url: url + '/proposals', headers, payload: { trackId } });
+    await db.insert(tracks).values({
+      id: trackId,
+      title: 'Private track',
+      artist: 'Test',
+      durationMs: 1000,
+      audioPath: trackId,
+      contentHash: trackId,
+    });
+    let guest = await connect(bob);
+    try {
+      expect((await queue()).statusCode).toBe(404);
+      expect((await propose()).statusCode).toBe(404);
+      const friend = await server.inject({
+        method: 'POST',
+        url: '/friends/requests',
+        headers: owner,
+        payload: { userId: bob.user.id },
+      });
+      expect(friend.statusCode).toBe(201);
+      expect(
+        (
+          await server.inject({
+            method: 'POST',
+            url: `/friends/requests/${friend.json().id}/accept`,
+            headers,
+          })
+        ).statusCode,
+      ).toBe(200);
+      expect(
+        (
+          await server.inject({
+            method: 'POST',
+            url: url + '/invitations',
+            headers: owner,
+            payload: { userId: bob.user.id },
+          })
+        ).statusCode,
+      ).toBe(201);
+      const proposal = await propose();
+      expect(proposal.statusCode).toBe(201);
+      const voteUrl = `${url}/proposals/${proposal.json().id}/vote`;
+      guest.send({ type: 'subscribe', spaceId: space.id });
+      expect(await guest.next()).toMatchObject({ type: 'subscribed', version: 2 });
+      guest.socket.terminate();
+      guest = await connect(bob);
+      const initial = (await queue()).json();
+      expect(initial).toMatchObject({ version: 2, items: [{ voteCount: 0, hasVoted: false }] });
+      expect(
+        (await server.inject({ method: 'PUT', url: voteUrl, headers: owner })).statusCode,
+      ).toBe(204);
+      guest.send({ type: 'subscribe', spaceId: space.id });
+      expect(await guest.next()).toMatchObject({
+        type: 'subscribed',
+        version: initial.version + 1,
+      });
+      expect((await queue()).json()).toMatchObject({
+        version: 3,
+        items: [{ voteCount: 1, hasVoted: false }],
+      });
+      expect((await server.inject({ method: 'PUT', url: voteUrl, headers })).statusCode).toBe(204);
+      expect(await guest.next()).toMatchObject({
+        type: 'queue.updated',
+        version: 4,
+        data: { items: [{ voteCount: 2, hasVoted: true }] },
+      });
+      expect(
+        (
+          await server.inject({
+            method: 'DELETE',
+            url: `${url}/invitations/${bob.user.id}`,
+            headers: owner,
+          })
+        ).statusCode,
+      ).toBe(204);
+      expect(await guest.next()).toMatchObject({ type: 'space.access_revoked', spaceId: space.id });
+      expect((await queue()).statusCode).toBe(404);
+      expect((await server.inject({ method: 'DELETE', url: voteUrl, headers })).statusCode).toBe(
+        404,
+      );
+    } finally {
+      guest.socket.terminate();
+      await db.delete(tracks).where(inArray(tracks.id, [trackId]));
+    }
+  });
 });
