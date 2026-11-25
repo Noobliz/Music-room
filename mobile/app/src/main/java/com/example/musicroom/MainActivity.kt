@@ -47,7 +47,11 @@ import com.example.musicroom.feature.home.ui.HomeScreen
 import com.example.musicroom.ui.theme.MusicroomTheme
 import kotlinx.coroutines.launch
 import androidx.activity.compose.BackHandler
+import com.example.musicroom.feature.profile.ui.EditProfileScreen
+import com.example.musicroom.feature.profile.ui.EditProfileState
+import com.example.musicroom.feature.profile.ui.EditProfileViewModel
 import com.example.musicroom.feature.profile.ui.ProfileScreen
+import com.example.musicroom.feature.profile.ui.ProfileState
 import com.example.musicroom.feature.profile.ui.ProfileViewModel
 
 class MainActivity : ComponentActivity() {
@@ -66,6 +70,8 @@ class MainActivity : ComponentActivity() {
     private val linkedAccountsViewModel: LinkedAccountsViewModel by viewModels { LinkedAccountsViewModel.Factory }
 
     private val profileViewModel: ProfileViewModel by viewModels { ProfileViewModel.Factory }
+
+    private val editProfileViewModel: EditProfileViewModel by viewModels { EditProfileViewModel.Factory }
     private val googleCredentialProvider: GoogleCredentialProvider = GoogleCredentialProvider()
     private val healthViewModel: HealthViewModel by viewModels()
 
@@ -87,6 +93,7 @@ class MainActivity : ComponentActivity() {
             var showForgotPassword: Boolean by rememberSaveable { mutableStateOf(false) }
             var showLinkedAccounts: Boolean by rememberSaveable { mutableStateOf(false) }
             var showProfile: Boolean by rememberSaveable { mutableStateOf(false) }
+            var showEditProfile: Boolean by rememberSaveable { mutableStateOf(false) }
             val currentUser: AuthUser? by mainViewModel.currentUser.collectAsState()
             MusicroomTheme {
                 LocalNetworkPermissionGate {
@@ -106,6 +113,8 @@ class MainActivity : ComponentActivity() {
                                 linkedAccountsViewModel.reset()
                                 showProfile = false
                                 profileViewModel.reset()
+                                showEditProfile = false
+                                editProfileViewModel.reset()
                             }
                         }
                         if (deepLink is AuthDeepLink.VerifyEmail) {
@@ -182,6 +191,29 @@ class MainActivity : ComponentActivity() {
                                     onBackClick = { showLinkedAccounts = false },
                                     modifier = Modifier.padding(innerPadding)
                                 )
+                            } else if (showEditProfile) {
+                                val editState: EditProfileState = editProfileViewModel.state
+
+                                LaunchedEffect(editState.saved) {
+                                    if (editState.saved) {
+                                        showEditProfile = false
+                                        editProfileViewModel.reset()
+                                        profileViewModel.load()
+                                    }
+                                }
+                                BackHandler { showEditProfile = false }
+
+                                EditProfileScreen(
+                                    state = editState,
+                                    onUsernameChange = { editProfileViewModel.onUsernameChange(it) },
+                                    onBioChange = { editProfileViewModel.onBioChange(it) },
+                                    onGenreToggle = { editProfileViewModel.onGenreToggle(it) },
+                                    onFullNameChange = { editProfileViewModel.onFullNameChange(it) },
+                                    onBirthDateChange = { editProfileViewModel.onBirthDateChange(it) },
+                                    onSaveClick = { editProfileViewModel.save() },
+                                    onCancelClick = { showEditProfile = false },
+                                    modifier = Modifier.padding(innerPadding),
+                                )
                             } else if (showProfile) {
                                 LaunchedEffect(Unit) {
                                     profileViewModel.load()
@@ -192,7 +224,13 @@ class MainActivity : ComponentActivity() {
                                 ProfileScreen(
                                     state = profileViewModel.state,
                                     onRetryClick = { profileViewModel.load() },
-                                    onEditClick = {},
+                                    onEditClick = {
+                                        val current = profileViewModel.state
+                                        if (current is ProfileState.Loaded) {
+                                            editProfileViewModel.start(current.profile)
+                                            showEditProfile = true
+                                        }
+                                    },
                                     onBackClick = { showProfile = false },
                                     modifier = Modifier.padding(innerPadding)
                                 )

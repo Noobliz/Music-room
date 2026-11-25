@@ -153,26 +153,6 @@ private fun ProfileField(label: String, value: String?) {
     }
 }
 
-// `when` exhaustif sur l'enum
-private fun genreLabel(genre: MusicGenre): String =
-    when (genre) {
-        MusicGenre.POP -> "Pop"
-        MusicGenre.ROCK -> "Rock"
-        MusicGenre.HIP_HOP -> "Hip-hop"
-        MusicGenre.RNB -> "R&B"
-        MusicGenre.ELECTRONIC -> "Électro"
-        MusicGenre.JAZZ -> "Jazz"
-        MusicGenre.CLASSICAL -> "Classique"
-        MusicGenre.METAL -> "Metal"
-        MusicGenre.FOLK -> "Folk"
-        MusicGenre.REGGAE -> "Reggae"
-        MusicGenre.BLUES -> "Blues"
-        MusicGenre.COUNTRY -> "Country"
-        MusicGenre.SOUL -> "Soul"
-        MusicGenre.LATIN -> "Latino"
-        MusicGenre.WORLD -> "Musiques du monde"
-    }
-
 // "1995-03-14" -> "14/03/1995". Format inattendu : on renvoie la date telle quelle.
 private fun formatDate(isoDate: String): String {
     val parts: List<String> = isoDate.split("-")

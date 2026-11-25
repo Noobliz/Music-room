@@ -30,7 +30,7 @@ class MusicRoomApp: Application() {
     }
 
     val profileRepository: ProfileRepository by lazy {
-        ProfileRepository(profileApi, ApiClient.json)
+        ProfileRepository(profileApi, ApiClient.json, sessionManager)
     }
 
 }
