@@ -12,7 +12,7 @@ Upgrade: websocket
 
 - The access token is the one returned by `/auth/login` or `/auth/refresh`, checked like on every HTTP route (signature, expiry, active session).
 - Without a valid token the upgrade is refused with HTTP `401` and the usual error body (`TOKEN_MISSING`, `TOKEN_INVALID` or `TOKEN_EXPIRED`).
-- Messages are JSON text frames of 4 KiB at most.
+- Messages are JSON text frames. Client messages are limited to 4 KiB.
 
 ## Client → server
 
@@ -40,11 +40,14 @@ Every message has the same four fields:
 | ---------------------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | `subscribed`           | `null`                                                                     | Answer to `subscribe`. `version` is the current version of the space                                                                   |
 | `space.updated`        | the space, same shape as `GET /spaces/:id` (with my `myRole` and `canAct`) | The owner changed the space, or my role in it changed (invited, invitation removed)                                                    |
+| `queue.updated`        | `{ "items": [...] }` with the same ordered items as `GET /spaces/:id/queue` | The ranked queue changed, including after a participant deleted their account |
 | `space.deleted`        | `null`                                                                     | The owner deleted the space. The subscription ends                                                                                     |
 | `space.access_revoked` | `null`                                                                     | I can no longer open the space (made private, invitation removed, friendship removed). The subscription ends                           |
 | `error`                | `{ "code": "...", "message": "..." }`                                      | The last client message was rejected: `VALIDATION_ERROR` (malformed message), `SPACE_NOT_FOUND`, `INTERNAL_ERROR`. `version` is `null` |
 
-Track Vote (votes, queue, current track) and Playlist Editor (add, remove, move) will add their own types to this list, with the same envelope.
+`queue.updated` replaces the event queue. Items are ordered by descending vote count, then by proposal date and ID ascending. Each subscriber receives their own `hasVoted` for each item. Each successful change increments the space version in the same transaction as the write. Retrying an existing vote, removing an absent vote, or proposing a track already queued produces no update.
+
+The queue and its version come from the same committed snapshot. When several users vote at once, more than one notification can contain the same latest version.
 
 ## Versions
 
@@ -52,7 +55,7 @@ Each space has a `version` (also returned by the REST routes of the space) that 
 
 - `version < known`: stale event, ignore it.
 - `version == known` or `version == known + 1`: apply it. `space.updated` carries the whole space and replaces the local copy.
-- `version > known + 1`: events were missed. Reload the space with REST.
+- `version > known + 1`: events were missed. Reload the space with REST, including `GET /spaces/:id/queue` for an open event queue. The queue response contains `{ version, items }`.
 
 ## Keep-alive and reconnection
 
@@ -60,11 +63,11 @@ Each space has a `version` (also returned by the REST routes of the space) that 
 - At the same time the server checks the session. When the access token has expired or the user logged out, it closes the socket with code **`4401`** and reason `TOKEN_EXPIRED` or `TOKEN_INVALID`. Refresh the token with `/auth/refresh` and reconnect.
 - After any disconnection (network loss, `4401`, server restart):
   1. reconnect with a valid token;
-  2. reload each open space with REST (`GET /spaces/:id`, and later the service routes);
+  2. reload each open space with `GET /spaces/:id` and each open event queue with `GET /spaces/:id/queue`;
   3. send `subscribe` again for each of them;
   4. if the `version` of `subscribed` is greater than the one loaded, reload once more.
 
-Subscriptions do not survive a reconnection.
+The server registers the subscription while holding the event version stable. A concurrent vote is reflected in the acknowledgement version or delivered to the registered subscriber. Space IDs in server messages use lowercase UUIDs.
 
 ## Example
 

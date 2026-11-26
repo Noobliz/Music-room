@@ -106,6 +106,18 @@ Expected response:
 }
 ```
 
+### Run the Track Vote scenario in Bruno
+
+With the local backend running, open `backend/bruno` as a collection and select the `local` environment. Enable **Developer Mode** for the collection so the scenario can open its WebSocket. Right-click **track-vote-scenario** and run the entire folder in order.
+
+The runner signs in both seeded accounts, picks a catalog track, and creates its own event. It checks simultaneous votes over REST and WebSocket, duplicate proposals, repeat votes, vote removal, and voting permissions. The last request deletes the event.
+
+With the Bruno CLI installed, the equivalent command from `backend/bruno` is:
+
+```bash
+bru run track-vote-scenario --env local --sandbox developer
+```
+
 ## CI
 
 The GitHub Actions CI checks ESLint with zero warnings and Prettier on non-draft pull requests. It exits successfully right away when no `backend/` files changed. Declarative branch protection lives in `.github/settings.yml` and requires the `backend-quality` check before merge through the Probot Settings app.

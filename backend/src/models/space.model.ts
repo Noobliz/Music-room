@@ -12,7 +12,7 @@ import {
   type SQL,
 } from 'drizzle-orm';
 
-import { db } from '../db/client.js';
+import { db, type DbTransaction } from '../db/client.js';
 import {
   type NewSpace,
   profiles,
@@ -50,8 +50,8 @@ const userColumns = {
 const isInvited = (userId: string): SQL<boolean> =>
   sql<boolean>`exists (select 1 from ${spaceInvitations} where ${spaceInvitations.spaceId} = ${spaces.id} and ${spaceInvitations.userId} = ${userId})`;
 
-const selectSpaces = (userId: string) =>
-  db
+const selectSpaces = (userId: string, executor: DbExecutor = db) =>
+  executor
     .select({ ...getTableColumns(spaces), owner: userColumns, isInvited: isInvited(userId) })
     .from(spaces)
     .innerJoin(profiles, eq(profiles.id, spaces.ownerId));
@@ -76,9 +76,31 @@ const searchOrder = (query: string | undefined): SQL[] => {
 export const findSpaceForUser = async (
   spaceId: string,
   userId: string,
+  executor: DbExecutor = db,
 ): Promise<SpaceRow | undefined> => {
-  const [space] = await selectSpaces(userId).where(eq(spaces.id, spaceId)).limit(1);
+  const [space] = await selectSpaces(userId, executor).where(eq(spaces.id, spaceId)).limit(1);
   return space;
+};
+
+export const findLockedSpaceForUser = async (
+  tx: DbTransaction,
+  spaceId: string,
+  userId: string,
+  lock: 'share' | 'no key update',
+): Promise<SpaceRow | undefined> => {
+  const [space] = await tx
+    .select({ ...getTableColumns(spaces), owner: userColumns })
+    .from(spaces)
+    .innerJoin(profiles, eq(profiles.id, spaces.ownerId))
+    .where(eq(spaces.id, spaceId))
+    .for(lock, { of: spaces });
+  if (!space) return undefined;
+  const [invitation] = await tx
+    .select({ id: spaceInvitations.userId })
+    .from(spaceInvitations)
+    .where(and(eq(spaceInvitations.spaceId, spaceId), eq(spaceInvitations.userId, userId)))
+    .for('share');
+  return { ...space, isInvited: Boolean(invitation) };
 };
 
 export const insertSpace = async (values: NewSpace): Promise<Space> => {
@@ -86,15 +108,18 @@ export const insertSpace = async (values: NewSpace): Promise<Space> => {
   return space as Space;
 };
 
-export const findSpaceMembers = async (spaceId: string): Promise<SpaceMembers | undefined> => {
+export const findSpaceMembers = async (
+  spaceId: string,
+  executor: DbExecutor = db,
+): Promise<SpaceMembers | undefined> => {
   const [[space], invitees] = await Promise.all([
-    db
+    executor
       .select({ ...getTableColumns(spaces), owner: userColumns })
       .from(spaces)
       .innerJoin(profiles, eq(profiles.id, spaces.ownerId))
       .where(eq(spaces.id, spaceId))
       .limit(1),
-    db
+    executor
       .select({ userId: spaceInvitations.userId })
       .from(spaceInvitations)
       .where(eq(spaceInvitations.spaceId, spaceId)),

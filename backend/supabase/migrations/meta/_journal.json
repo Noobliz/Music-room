@@ -92,6 +92,20 @@
       "when": 1795530069735,
       "tag": "20261124142109_profile_preferences_grants",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1795596547504,
+      "tag": "20261125084907_event_track_vote",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1795596622801,
+      "tag": "20261125085022_event_track_privileges",
+      "breakpoints": true
     }
   ]
 }

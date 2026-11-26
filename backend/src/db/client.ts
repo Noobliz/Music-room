@@ -10,6 +10,8 @@ export const postgresClient = postgres(appConfig.database.url, {
 
 export const db = drizzle({ client: postgresClient });
 
+export type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
 export const checkDatabaseConnection = async (): Promise<void> => {
   await db.execute(sql`select 1`);
 };

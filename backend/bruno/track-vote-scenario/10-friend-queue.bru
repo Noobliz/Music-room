@@ -1,0 +1,24 @@
+meta {
+  name: friend reads the remaining vote
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{baseUrl}}/spaces/{{voteSpaceId}}/queue
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{friendToken}}
+}
+
+tests {
+  test("the friend sees one vote and their own voting state", () => {
+    expect(res.status).to.equal(200);
+    expect(res.body.version).to.equal(5);
+    expect(res.body.items).to.have.lengthOf(1);
+    expect(res.body.items[0]).to.include({ id: bru.getVar("voteProposalId"), voteCount: 1, hasVoted: false });
+  });
+}

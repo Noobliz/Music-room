@@ -1,0 +1,39 @@
+meta {
+  name: Owner creates a public event
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/spaces
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{ownerToken}}
+}
+
+body:json {
+  {
+    "kind": "event",
+    "name": "{{voteEventName}}",
+    "visibility": "public",
+    "accessMode": "everyone"
+  }
+}
+
+script:pre-request {
+  bru.setVar("voteEventName", `bruno-track-vote-${Date.now()}`);
+}
+
+script:post-response {
+  if (res.status === 201) bru.setVar("voteSpaceId", res.body.id);
+}
+
+tests {
+  test("new event starts at version 1", () => {
+    expect(res.status).to.equal(201);
+    expect(res.body.version).to.equal(1);
+  });
+}

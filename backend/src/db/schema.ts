@@ -3,3 +3,4 @@ export * from './schema/profiles.js';
 export * from './schema/friendships.js';
 export * from './schema/tracks.js';
 export * from './schema/spaces.js';
+export * from './schema/track-vote.js';

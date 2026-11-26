@@ -1,0 +1,28 @@
+meta {
+  name: Owner restricts voting to invitees
+  type: http
+  seq: 12
+}
+
+patch {
+  url: {{baseUrl}}/spaces/{{voteSpaceId}}
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{ownerToken}}
+}
+
+body:json {
+  {
+    "accessMode": "invited_only"
+  }
+}
+
+tests {
+  test("the event now requires an invitation to vote", () => {
+    expect(res.status).to.equal(200);
+    expect(res.body.accessMode).to.equal("invited_only");
+  });
+}

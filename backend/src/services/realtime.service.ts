@@ -1,6 +1,7 @@
+import { db } from '../db/client.js';
 import { isSessionActive } from '../models/session.model.js';
 import { type ServerMessage } from '../schemas/realtime.schema.js';
-import { requireViewableSpace, type SpaceAccess } from './space-access.service.js';
+import { requireLockedSpace, type SpaceAccess } from './space-access.service.js';
 import { type AuthContext } from './token.service.js';
 
 export const UNAUTHORIZED_CLOSE_CODE = 4401;
@@ -36,20 +37,25 @@ export const disconnect = (connection: RealtimeConnection): void => {
 };
 
 export const subscribe = async (connection: RealtimeConnection, spaceId: string): Promise<void> => {
-  const space = await requireViewableSpace(connection.auth, spaceId);
-  const spaceIds = connections.get(connection);
-  if (!spaceIds) {
-    return;
-  }
-  spaceIds.add(spaceId);
-  const subscribers = subscriptions.get(spaceId) ?? new Map<RealtimeConnection, SpaceAccess>();
-  subscriptions.set(spaceId, subscribers.set(connection, space.access));
-  connection.send({ type: 'subscribed', spaceId, version: space.version, data: null });
+  await db.transaction(async (tx) => {
+    const space = await requireLockedSpace(tx, connection.auth, spaceId, 'share');
+    const spaceIds = connections.get(connection);
+    if (!spaceIds) {
+      return;
+    }
+    spaceIds.add(spaceId);
+    const subscribers = subscriptions.get(spaceId) ?? new Map<RealtimeConnection, SpaceAccess>();
+    subscriptions.set(spaceId, subscribers.set(connection, space.access));
+    connection.send({ type: 'subscribed', spaceId, version: space.version, data: null });
+  });
 };
 
 export const subscribersOf = (spaceId: string): [RealtimeConnection, SpaceAccess][] => [
   ...(subscriptions.get(spaceId) ?? []),
 ];
+
+export const isSubscribed = (connection: RealtimeConnection, spaceId: string): boolean =>
+  subscriptions.get(spaceId)?.has(connection) ?? false;
 
 export const updateSubscriberAccess = (
   connection: RealtimeConnection,

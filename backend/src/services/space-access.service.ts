@@ -1,6 +1,12 @@
+import { type DbTransaction } from '../db/client.js';
 import { type Space } from '../db/schema.js';
 import { AppError } from '../errors/app-error.js';
-import { findSpaceForUser, type SpaceRow } from '../models/space.model.js';
+import {
+  findLockedSpaceForUser,
+  findSpaceForUser,
+  type DbExecutor,
+  type SpaceRow,
+} from '../models/space.model.js';
 import { type SpaceRole } from '../schemas/space.schema.js';
 import { type AuthContext } from './token.service.js';
 
@@ -27,11 +33,11 @@ export const resolveAccess = (
   return { role: 'none', canView, canAct: canView && space.accessMode === 'everyone' };
 };
 
-export const requireViewableSpace = async (
-  { userId }: AuthContext,
+const viewableSpace = (
+  space: SpaceRow | undefined,
   spaceId: string,
-): Promise<AccessibleSpace> => {
-  const space = await findSpaceForUser(spaceId, userId);
+  userId: string,
+): AccessibleSpace => {
   const access = space && resolveAccess(space, userId, space.isInvited);
   if (!space || !access?.canView) {
     throw new AppError(404, 'SPACE_NOT_FOUND', `No space with id ${spaceId}`);
@@ -39,11 +45,22 @@ export const requireViewableSpace = async (
   return { ...space, access };
 };
 
-export const requireActionableSpace = async (
-  auth: AuthContext,
+export const requireViewableSpace = async (
+  { userId }: AuthContext,
   spaceId: string,
-): Promise<AccessibleSpace> => {
-  const space = await requireViewableSpace(auth, spaceId);
+  executor?: DbExecutor,
+): Promise<AccessibleSpace> =>
+  viewableSpace(await findSpaceForUser(spaceId, userId, executor), spaceId, userId);
+
+export const requireLockedSpace = async (
+  tx: DbTransaction,
+  { userId }: AuthContext,
+  spaceId: string,
+  lock: 'share' | 'no key update',
+): Promise<AccessibleSpace> =>
+  viewableSpace(await findLockedSpaceForUser(tx, spaceId, userId, lock), spaceId, userId);
+
+export const requireActionableSpace = (space: AccessibleSpace): void => {
   if (!space.access.canAct) {
     throw new AppError(
       403,
@@ -51,7 +68,6 @@ export const requireActionableSpace = async (
       'Only the owner and invited users can act in this space',
     );
   }
-  return space;
 };
 
 export const requireSpaceOwner = async (

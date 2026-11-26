@@ -1,0 +1,21 @@
+meta {
+  name: Friend removes their vote
+  type: http
+  seq: 9
+}
+
+delete {
+  url: {{baseUrl}}/spaces/{{voteSpaceId}}/proposals/{{voteProposalId}}/vote
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{friendToken}}
+}
+
+tests {
+  test("removing a vote succeeds", () => {
+    expect(res.status).to.equal(204);
+  });
+}

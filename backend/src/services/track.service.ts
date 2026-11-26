@@ -23,7 +23,7 @@ const coverUrl = (coverPath: string | null): string | null =>
     ? null
     : createSupabaseClient().storage.from(COVERS_BUCKET).getPublicUrl(coverPath).data.publicUrl;
 
-const toTrackView = (track: Track): TrackView => ({
+export const toTrackView = (track: Track): TrackView => ({
   id: track.id,
   title: track.title,
   artist: track.artist,

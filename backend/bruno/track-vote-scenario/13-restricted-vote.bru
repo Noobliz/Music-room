@@ -1,0 +1,26 @@
+meta {
+  name: Friend can no longer vote
+  type: http
+  seq: 13
+}
+
+put {
+  url: {{baseUrl}}/spaces/{{voteSpaceId}}/proposals/{{voteProposalId}}/vote
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{friendToken}}
+}
+
+body:json {
+  {}
+}
+
+tests {
+  test("the uninvited voter is refused", () => {
+    expect(res.status).to.equal(403);
+    expect(res.body.error.code).to.equal("SPACE_ACTION_FORBIDDEN");
+  });
+}
