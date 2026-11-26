@@ -14,6 +14,7 @@ import {
 
 import { db, type DbTransaction } from '../db/client.js';
 import {
+  eventVoteZones,
   type NewSpace,
   profiles,
   type Space,
@@ -27,7 +28,15 @@ export type SpaceKind = Space['kind'];
 
 export type SpaceUserRow = { id: string; username: string; avatarUrl: string | null };
 
-export type SpaceRow = Space & { owner: SpaceUserRow; isInvited: boolean };
+export type VoteZoneRow = Omit<typeof eventVoteZones.$inferSelect, 'spaceId'>;
+
+export type VoteWindow = 'before' | 'open' | 'after';
+
+export type SpaceRow = Space & {
+  owner: SpaceUserRow;
+  voteZone: VoteZoneRow | null;
+  isInvited: boolean;
+};
 
 export type SpaceSearchResult = { rows: SpaceRow[]; total: number };
 
@@ -35,7 +44,10 @@ export type DbExecutor = Pick<typeof db, 'delete' | 'select'>;
 
 export type SpaceInvitationRow = { user: SpaceUserRow; createdAt: Date };
 
-export type SpaceMembers = { space: Space & { owner: SpaceUserRow }; inviteeIds: Set<string> };
+export type SpaceMembers = {
+  space: Omit<SpaceRow, 'isInvited'>;
+  inviteeIds: Set<string>;
+};
 
 export type SpaceChanges = Partial<
   Pick<NewSpace, 'name' | 'description' | 'visibility' | 'accessMode'>
@@ -47,14 +59,26 @@ const userColumns = {
   avatarUrl: profiles.avatarUrl,
 };
 
+const voteZoneColumns = {
+  latitude: eventVoteZones.latitude,
+  longitude: eventVoteZones.longitude,
+  radiusMeters: eventVoteZones.radiusMeters,
+  startsAt: eventVoteZones.startsAt,
+  endsAt: eventVoteZones.endsAt,
+  timeZone: eventVoteZones.timeZone,
+};
+
+const spaceColumns = { ...getTableColumns(spaces), owner: userColumns, voteZone: voteZoneColumns };
+
 const isInvited = (userId: string): SQL<boolean> =>
   sql<boolean>`exists (select 1 from ${spaceInvitations} where ${spaceInvitations.spaceId} = ${spaces.id} and ${spaceInvitations.userId} = ${userId})`;
 
 const selectSpaces = (userId: string, executor: DbExecutor = db) =>
   executor
-    .select({ ...getTableColumns(spaces), owner: userColumns, isInvited: isInvited(userId) })
+    .select({ ...spaceColumns, isInvited: isInvited(userId) })
     .from(spaces)
-    .innerJoin(profiles, eq(profiles.id, spaces.ownerId));
+    .innerJoin(profiles, eq(profiles.id, spaces.ownerId))
+    .leftJoin(eventVoteZones, eq(eventVoteZones.spaceId, spaces.id));
 
 const ofKind = (kind: SpaceKind | undefined): SQL | undefined =>
   kind === undefined ? undefined : eq(spaces.kind, kind);
@@ -89,9 +113,10 @@ export const findLockedSpaceForUser = async (
   lock: 'share' | 'no key update',
 ): Promise<SpaceRow | undefined> => {
   const [space] = await tx
-    .select({ ...getTableColumns(spaces), owner: userColumns })
+    .select(spaceColumns)
     .from(spaces)
     .innerJoin(profiles, eq(profiles.id, spaces.ownerId))
+    .leftJoin(eventVoteZones, eq(eventVoteZones.spaceId, spaces.id))
     .where(eq(spaces.id, spaceId))
     .for(lock, { of: spaces });
   if (!space) return undefined;
@@ -103,9 +128,40 @@ export const findLockedSpaceForUser = async (
   return { ...space, isInvited: Boolean(invitation) };
 };
 
-export const insertSpace = async (values: NewSpace): Promise<Space> => {
-  const [space] = await db.insert(spaces).values(values).returning();
-  return space as Space;
+const saveVoteZone = async (
+  tx: DbTransaction,
+  spaceId: string,
+  zone: VoteZoneRow | null,
+): Promise<void> => {
+  if (!zone) {
+    await tx.delete(eventVoteZones).where(eq(eventVoteZones.spaceId, spaceId));
+    return;
+  }
+  await tx
+    .insert(eventVoteZones)
+    .values({ ...zone, spaceId })
+    .onConflictDoUpdate({ target: eventVoteZones.spaceId, set: zone });
+};
+
+export const insertSpace = (values: NewSpace, zone: VoteZoneRow | null): Promise<Space> =>
+  db.transaction(async (tx) => {
+    const [space] = await tx.insert(spaces).values(values).returning();
+    if (zone) await saveVoteZone(tx, (space as Space).id, zone);
+    return space as Space;
+  });
+
+export const findVoteWindow = async (
+  tx: DbTransaction,
+  spaceId: string,
+): Promise<VoteWindow | undefined> => {
+  const localNow = sql`(now() at time zone ${eventVoteZones.timeZone})`;
+  const [row] = await tx
+    .select({
+      window: sql<VoteWindow>`case when ${localNow} < ${eventVoteZones.startsAt} then 'before' when ${localNow} >= ${eventVoteZones.endsAt} then 'after' else 'open' end`,
+    })
+    .from(eventVoteZones)
+    .where(eq(eventVoteZones.spaceId, spaceId));
+  return row?.window;
 };
 
 export const findSpaceMembers = async (
@@ -114,9 +170,10 @@ export const findSpaceMembers = async (
 ): Promise<SpaceMembers | undefined> => {
   const [[space], invitees] = await Promise.all([
     executor
-      .select({ ...getTableColumns(spaces), owner: userColumns })
+      .select(spaceColumns)
       .from(spaces)
       .innerJoin(profiles, eq(profiles.id, spaces.ownerId))
+      .leftJoin(eventVoteZones, eq(eventVoteZones.spaceId, spaces.id))
       .where(eq(spaces.id, spaceId))
       .limit(1),
     executor
@@ -127,11 +184,17 @@ export const findSpaceMembers = async (
   return space && { space, inviteeIds: new Set(invitees.map(({ userId }) => userId)) };
 };
 
-export const updateSpace = async (spaceId: string, changes: SpaceChanges): Promise<void> => {
-  await db
+export const updateSpace = async (
+  tx: DbTransaction,
+  spaceId: string,
+  changes: SpaceChanges,
+  zone: VoteZoneRow | null,
+): Promise<void> => {
+  await tx
     .update(spaces)
     .set({ ...changes, version: sql`${spaces.version} + 1` })
     .where(eq(spaces.id, spaceId));
+  await saveVoteZone(tx, spaceId, zone);
 };
 
 export const deleteSpace = async (spaceId: string): Promise<number | undefined> => {

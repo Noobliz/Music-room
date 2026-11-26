@@ -15,10 +15,14 @@ import {
   type SpaceInvitationRow,
   type SpaceRow,
   updateSpace as updateSpaceRow,
+  type VoteZoneRow,
 } from '../models/space.model.js';
+import { db } from '../db/client.js';
 import {
   type CreateSpaceBody,
   type MySpacesQuery,
+  type SpaceAccessMode,
+  type SpaceKind,
   type SpaceInvitationView,
   type SpacePage,
   type SpaceSearchQuery,
@@ -26,7 +30,15 @@ import {
   type UpdateSpaceBody,
 } from '../schemas/space.schema.js';
 import * as realtime from './realtime.service.js';
-import { requireSpaceOwner, requireViewableSpace, resolveAccess } from './space-access.service.js';
+import { type VoteZoneInput } from '../schemas/vote-zone.schema.js';
+import {
+  requireLockedSpace,
+  requireOwnerRole,
+  requireSpaceOwner,
+  requireViewableSpace,
+  resolveAccess,
+  toVoteZoneView,
+} from './space-access.service.js';
 import { type AuthContext } from './token.service.js';
 
 const toSpaceView = (space: SpaceRow, userId: string): SpaceView => {
@@ -41,6 +53,7 @@ const toSpaceView = (space: SpaceRow, userId: string): SpaceView => {
     owner: space.owner,
     myRole: role,
     canAct,
+    voteZone: space.voteZone && toVoteZoneView(space.voteZone),
     version: space.version,
     createdAt: space.createdAt.toISOString(),
     updatedAt: space.updatedAt.toISOString(),
@@ -99,15 +112,49 @@ const toInvitationView = ({ user, createdAt }: SpaceInvitationRow): SpaceInvitat
   invitedAt: createdAt.toISOString(),
 });
 
+const resolveVoteZone = (
+  kind: SpaceKind,
+  accessMode: SpaceAccessMode,
+  current: VoteZoneRow | null,
+  requested: VoteZoneInput | undefined,
+): VoteZoneRow | null => {
+  if (accessMode === 'location_time' && kind !== 'event') {
+    throw new AppError(400, 'VOTE_ZONE_NOT_ALLOWED', 'Only events can use the location_time mode');
+  }
+  if (accessMode !== 'location_time') {
+    if (requested) {
+      throw new AppError(
+        400,
+        'VOTE_ZONE_NOT_ALLOWED',
+        'A vote zone only applies to the location_time mode',
+      );
+    }
+    return null;
+  }
+  const zone = requested ?? current;
+  if (!zone) {
+    throw new AppError(
+      400,
+      'VOTE_ZONE_REQUIRED',
+      'The location_time mode needs a vote zone (place, radius and time slot)',
+    );
+  }
+  return zone;
+};
+
 export const createSpace = async (auth: AuthContext, body: CreateSpaceBody): Promise<SpaceView> => {
-  const space = await insertSpace({
-    kind: body.kind,
-    ownerId: auth.userId,
-    name: body.name,
-    description: body.description ?? null,
-    visibility: body.visibility,
-    accessMode: body.accessMode,
-  });
+  const voteZone = resolveVoteZone(body.kind, body.accessMode, null, body.voteZone);
+  const space = await insertSpace(
+    {
+      kind: body.kind,
+      ownerId: auth.userId,
+      name: body.name,
+      description: body.description ?? null,
+      visibility: body.visibility,
+      accessMode: body.accessMode,
+    },
+    voteZone,
+  );
   return getSpace(auth, space.id);
 };
 
@@ -121,8 +168,14 @@ export const updateSpace = async (
   spaceId: string,
   body: UpdateSpaceBody,
 ): Promise<SpaceView> => {
-  await requireSpaceOwner(auth, spaceId);
-  await updateSpaceRow(spaceId, body);
+  const { voteZone, ...changes } = body;
+  await db.transaction(async (tx) => {
+    const space = await requireLockedSpace(tx, auth, spaceId, 'no key update');
+    requireOwnerRole(space);
+    const accessMode = changes.accessMode ?? space.accessMode;
+    const zone = resolveVoteZone(space.kind, accessMode, space.voteZone, voteZone);
+    await updateSpaceRow(tx, spaceId, changes, zone);
+  });
   notifyInBackground(log, spaceId, true);
   return getSpace(auth, spaceId);
 };

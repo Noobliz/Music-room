@@ -24,6 +24,10 @@ const notFoundSchema = errorResponseSchema.describe(
   'SPACE_NOT_FOUND: the space does not exist, or it is private and I am neither its owner nor invited',
 );
 
+const voteZoneErrorSchema = errorResponseSchema.describe(
+  'VALIDATION_ERROR, VOTE_ZONE_REQUIRED (location_time without voteZone) or VOTE_ZONE_NOT_ALLOWED (voteZone outside location_time, or location_time on a playlist)',
+);
+
 const notOwnerSchema = errorResponseSchema.describe(
   'NOT_SPACE_OWNER: I can open the space but I am not its owner',
 );
@@ -36,12 +40,12 @@ export const spaceRoutes: FastifyPluginAsyncZod = async (server) => {
         tags: ['spaces'],
         summary: 'Create an event or a playlist',
         description:
-          'I become its owner. Public and open to everyone unless visibility or accessMode say otherwise.',
+          'I become its owner. Public and open to everyone unless visibility or accessMode say otherwise. An event in location_time mode needs a voteZone.',
         security: [{ bearerAuth: [] }],
         body: createSpaceBodySchema,
         response: {
           201: spaceSchema,
-          400: errorResponseSchema.describe('VALIDATION_ERROR'),
+          400: voteZoneErrorSchema,
           401: unauthorizedSchema,
         },
       },
@@ -120,13 +124,14 @@ export const spaceRoutes: FastifyPluginAsyncZod = async (server) => {
       schema: {
         tags: ['spaces'],
         summary: 'Update a space',
-        description: 'Owner only. Name, description, visibility and access mode.',
+        description:
+          'Owner only. Name, description, visibility, access mode and vote zone. Switching an event to location_time needs a voteZone unless it already has one; leaving location_time deletes the vote zone.',
         security: [{ bearerAuth: [] }],
         params: spaceIdParamsSchema,
         body: updateSpaceBodySchema,
         response: {
           200: spaceSchema,
-          400: errorResponseSchema.describe('VALIDATION_ERROR'),
+          400: voteZoneErrorSchema,
           401: unauthorizedSchema,
           403: notOwnerSchema,
           404: notFoundSchema,
