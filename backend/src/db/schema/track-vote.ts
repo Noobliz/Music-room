@@ -1,10 +1,14 @@
 import { sql } from 'drizzle-orm';
 import {
+  check,
+  doublePrecision,
   index,
+  integer,
   pgEnum,
   pgPolicy,
   pgTable,
   primaryKey,
+  text,
   timestamp,
   uniqueIndex,
   uuid,
@@ -71,6 +75,33 @@ export const eventTrackVotes = pgTable(
   ],
 );
 
+export const eventVoteZones = pgTable(
+  'event_vote_zones',
+  {
+    spaceId: uuid('space_id')
+      .primaryKey()
+      .references(() => spaces.id, { onDelete: 'cascade' }),
+    latitude: doublePrecision('latitude').notNull(),
+    longitude: doublePrecision('longitude').notNull(),
+    radiusMeters: integer('radius_meters').notNull(),
+    startsAt: timestamp('starts_at', { mode: 'string' }).notNull(),
+    endsAt: timestamp('ends_at', { mode: 'string' }).notNull(),
+    timeZone: text('time_zone').notNull(),
+  },
+  (table) => [
+    check('event_vote_zones_latitude_range', sql`${table.latitude} between -90 and 90`),
+    check('event_vote_zones_longitude_range', sql`${table.longitude} between -180 and 180`),
+    check('event_vote_zones_radius_range', sql`${table.radiusMeters} between 10 and 50000`),
+    check('event_vote_zones_slot_order', sql`${table.endsAt} > ${table.startsAt}`),
+    pgPolicy('members can read event vote zones', {
+      for: 'select',
+      to: authenticatedRole,
+      using: sql`public.is_space_member(${table.spaceId}, ${authUid})`,
+    }),
+  ],
+);
+
 export type EventTrackProposal = typeof eventTrackProposals.$inferSelect;
 export type NewEventTrackProposal = typeof eventTrackProposals.$inferInsert;
 export type EventTrackVote = typeof eventTrackVotes.$inferSelect;
+export type EventVoteZone = typeof eventVoteZones.$inferSelect;
