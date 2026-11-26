@@ -1,0 +1,30 @@
+meta {
+  name: Select a local catalog track
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/tracks?limit=1
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{ownerToken}}
+}
+
+script:post-response {
+  if (res.status === 200 && res.body.items.length > 0) {
+    bru.setVar("zoneTrackId", res.body.items[0].id);
+  } else {
+    throw new Error("No catalog track available. Run make backend catalog and rerun this folder.");
+  }
+}
+
+tests {
+  test("a catalog track is available", () => {
+    expect(res.status).to.equal(200);
+    expect(res.body.items).to.have.lengthOf(1);
+  });
+}

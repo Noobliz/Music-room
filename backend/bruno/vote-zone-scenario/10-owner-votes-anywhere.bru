@@ -1,0 +1,25 @@
+meta {
+  name: Owner votes without a position
+  type: http
+  seq: 10
+}
+
+put {
+  url: {{baseUrl}}/spaces/{{zoneSpaceId}}/proposals/{{zoneProposalId}}/vote
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{ownerToken}}
+}
+
+body:json {
+  {}
+}
+
+tests {
+  test("the request succeeds", () => {
+    expect(res.status).to.equal(204);
+  });
+}

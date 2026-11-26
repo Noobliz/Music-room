@@ -1,0 +1,24 @@
+meta {
+  name: Friend opens the event and reads the vote zone
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/spaces/{{zoneSpaceId}}
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{friendToken}}
+}
+
+tests {
+  test("the friend can act if present and sees where", () => {
+    expect(res.status).to.equal(200);
+    expect(res.body.myRole).to.equal("none");
+    expect(res.body.canAct).to.equal(true);
+    expect(res.body.voteZone).to.include({ latitude: 48.8966, longitude: 2.3185 });
+  });
+}

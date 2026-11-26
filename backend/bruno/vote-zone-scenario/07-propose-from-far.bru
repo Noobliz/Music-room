@@ -1,0 +1,29 @@
+meta {
+  name: Friend proposes from the Eiffel Tower
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/spaces/{{zoneSpaceId}}/proposals
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{friendToken}}
+}
+
+body:json {
+  {
+    "trackId": "{{zoneTrackId}}",
+    "position": { "latitude": 48.8584, "longitude": 2.2945 }
+  }
+}
+
+tests {
+  test("the proposal is refused with OUTSIDE_VOTE_ZONE", () => {
+    expect(res.status).to.equal(403);
+    expect(res.body.error.code).to.equal("OUTSIDE_VOTE_ZONE");
+  });
+}

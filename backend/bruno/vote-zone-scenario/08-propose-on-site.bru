@@ -1,0 +1,32 @@
+meta {
+  name: Friend proposes from the event
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/spaces/{{zoneSpaceId}}/proposals
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{friendToken}}
+}
+
+body:json {
+  {
+    "trackId": "{{zoneTrackId}}",
+    "position": { "latitude": 48.8971, "longitude": 2.3192 }
+  }
+}
+
+script:post-response {
+  if (res.status === 201) bru.setVar("zoneProposalId", res.body.id);
+}
+
+tests {
+  test("the proposal is accepted on site", () => {
+    expect(res.status).to.equal(201);
+  });
+}

@@ -118,6 +118,16 @@ With the Bruno CLI installed, the equivalent command from `backend/bruno` is:
 bru run track-vote-scenario --env local --sandbox developer
 ```
 
+### Run the vote zone scenario in Bruno
+
+Right-click **vote-zone-scenario** and run the entire folder in order, with the `local` environment. It needs neither Developer Mode nor a WebSocket.
+
+The runner creates an event whose votes are limited to a 200 m zone and to a time slot around the current time. It checks that a proposal is refused without a position or from too far away, and accepted on site. It also checks that the owner votes from anywhere, and that votes are refused once the owner moves the slot to the past or the future. The last request deletes the event.
+
+```bash
+bru run vote-zone-scenario --env local
+```
+
 ## CI
 
 The GitHub Actions CI checks ESLint with zero warnings and Prettier on non-draft pull requests. It exits successfully right away when no `backend/` files changed. Declarative branch protection lives in `.github/settings.yml` and requires the `backend-quality` check before merge through the Probot Settings app.
