@@ -1,6 +1,7 @@
 package com.example.musicroom
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -21,17 +22,14 @@ import androidx.lifecycle.lifecycleScope
 import com.example.musicroom.core.ui.gradientBackground
 import com.example.musicroom.core.permission.LocalNetworkPermissionGate
 import com.example.musicroom.feature.auth.data.AuthDeepLink
-import com.example.musicroom.feature.auth.data.AuthResult
 import com.example.musicroom.feature.auth.data.AuthUser
 import com.example.musicroom.feature.auth.data.GoogleCredentialProvider
 import com.example.musicroom.feature.auth.data.GoogleCredentialResult
-import com.example.musicroom.feature.auth.data.OAuthResponse
 import com.example.musicroom.feature.auth.data.parseAuthDeepLink
 import com.example.musicroom.feature.auth.ui.ConfirmEmailScreen
 import com.example.musicroom.feature.auth.ui.ConfirmEmailViewModel
 import com.example.musicroom.feature.auth.ui.ForgotPasswordScreen
 import com.example.musicroom.feature.auth.ui.ForgotPasswordViewModel
-import com.example.musicroom.feature.auth.ui.HealthScreen
 import com.example.musicroom.feature.auth.ui.HealthViewModel
 import com.example.musicroom.feature.auth.ui.LinkedAccountsScreen
 import com.example.musicroom.feature.auth.ui.LinkedAccountsViewModel
@@ -47,12 +45,19 @@ import com.example.musicroom.feature.home.ui.HomeScreen
 import com.example.musicroom.ui.theme.MusicroomTheme
 import kotlinx.coroutines.launch
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.safeDrawing
 import com.example.musicroom.feature.profile.ui.EditProfileScreen
 import com.example.musicroom.feature.profile.ui.EditProfileState
 import com.example.musicroom.feature.profile.ui.EditProfileViewModel
 import com.example.musicroom.feature.profile.ui.ProfileScreen
 import com.example.musicroom.feature.profile.ui.ProfileState
 import com.example.musicroom.feature.profile.ui.ProfileViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class MainActivity : ComponentActivity() {
     private val loginViewModel: LoginViewModel by viewModels { LoginViewModel.Factory }
@@ -75,6 +80,17 @@ class MainActivity : ComponentActivity() {
     private val googleCredentialProvider: GoogleCredentialProvider = GoogleCredentialProvider()
     private val healthViewModel: HealthViewModel by viewModels()
 
+    private fun onAvatarPicked(uri: Uri) {
+        lifecycleScope.launch {
+            val mimeType: String? = contentResolver.getType(uri)
+            val bytes: ByteArray? = withContext(Dispatchers.IO) {
+                contentResolver.openInputStream(uri)?.use { it.readBytes() }
+            }
+            if (mimeType != null && bytes != null) {
+                profileViewModel.uploadAvatar(bytes, mimeType)
+            }
+        }
+    }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
@@ -95,6 +111,15 @@ class MainActivity : ComponentActivity() {
             var showProfile: Boolean by rememberSaveable { mutableStateOf(false) }
             var showEditProfile: Boolean by rememberSaveable { mutableStateOf(false) }
             val currentUser: AuthUser? by mainViewModel.currentUser.collectAsState()
+
+            val pickAvatar = rememberLauncherForActivityResult(
+                contract = ActivityResultContracts.PickVisualMedia(),
+            ) { uri: Uri? ->
+                // appelé au retour du sélecteur : uri == null si annule
+                if (uri != null) {
+                    onAvatarPicked(uri)
+                }
+            }
             MusicroomTheme {
                 LocalNetworkPermissionGate {
                     Scaffold(
@@ -102,6 +127,7 @@ class MainActivity : ComponentActivity() {
                             .fillMaxSize()
                             .gradientBackground(),
                         containerColor = Color.Transparent,
+                        contentWindowInsets = WindowInsets.safeDrawing,
                     ) { innerPadding ->
                         val deepLink: AuthDeepLink? = mainViewModel.pendingDeepLink
                         val user: AuthUser? = currentUser
@@ -232,6 +258,14 @@ class MainActivity : ComponentActivity() {
                                         }
                                     },
                                     onBackClick = { showProfile = false },
+                                    onChangeAvatarClick = {
+                                        pickAvatar.launch(
+                                            PickVisualMediaRequest(
+                                                ActivityResultContracts.PickVisualMedia.ImageOnly
+                                            )
+                                        )
+                                    },
+                                    onDeleteAvatarClick = { profileViewModel.deleteAvatar() },
                                     modifier = Modifier.padding(innerPadding)
                                 )
                             } else {

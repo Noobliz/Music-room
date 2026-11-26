@@ -19,4 +19,6 @@ fun AuthError.toMessage(): String =
         AuthError.IdentityNotDeletable -> "Ce moyen de connexion ne peut pas être supprimé."
         AuthError.NoGoogleAccount -> "Aucun compte Google sur cet appareil."
         AuthError.ProfileNotFound -> "Ce profil n'existe pas."
+        AuthError.PayloadTooLarge -> "L'image est trop lourde (50mo maximum)."
+        AuthError.UnsupportedMediaType -> "Format non pris en charge : choisissez une image JPEG, PNG ou WebP."
     }

@@ -17,17 +17,17 @@ import kotlinx.coroutines.launch
 
 class ProfileViewModel(
     private val repository: ProfileRepository
-): ViewModel() {
+) : ViewModel() {
     var state: ProfileState by mutableStateOf<ProfileState>(ProfileState.Loading)
         private set
 
-    fun load(){
+    fun load() {
         if (state !is ProfileState.Loaded) {
             state = ProfileState.Loading
         }
         viewModelScope.launch {
             val res: AuthResult<OwnProfile> = repository.getMyProfile()
-            state = when(res) {
+            state = when (res) {
                 is AuthResult.Success -> ProfileState.Loaded(res.data)
                 is AuthResult.Failure -> ProfileState.LoadFailed(res.error)
             }
@@ -37,6 +37,39 @@ class ProfileViewModel(
     fun reset() {
         state = ProfileState.Loading
     }
+
+    fun uploadAvatar(bytes: ByteArray, mimeType: String) {
+        val current: ProfileState = state
+        if (current !is ProfileState.Loaded || current.isBusy) return
+        state = current.copy(isBusy = true, actionError = null)
+        viewModelScope.launch {
+            val res: AuthResult<OwnProfile> =
+                repository.uploadMyAvatar(bytes, mimeType)
+            state = when (res) {
+                is AuthResult.Failure -> current.copy(isBusy = false, actionError = res.error)
+                is AuthResult.Success -> ProfileState.Loaded(res.data)
+            }
+        }
+    }
+
+    fun deleteAvatar() {
+        val current: ProfileState = state
+        if (current !is ProfileState.Loaded || current.isBusy) return
+        state = current.copy(isBusy = true, actionError = null)
+        viewModelScope.launch {
+            val res: AuthResult<Unit> =
+                repository.deleteMyAvatar()
+            state = when (res) {
+                is AuthResult.Failure -> current.copy(isBusy = false, actionError = res.error)
+                is AuthResult.Success -> current.copy(
+                    profile = current.profile.copy(avatarUrl = null),
+                    isBusy = false,
+                )
+
+            }
+        }
+    }
+
 
     companion object {
         val Factory: ViewModelProvider.Factory = viewModelFactory {

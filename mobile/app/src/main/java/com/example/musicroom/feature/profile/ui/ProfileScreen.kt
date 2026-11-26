@@ -1,10 +1,10 @@
-
 package com.example.musicroom.feature.profile.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -14,14 +14,18 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
 import com.example.musicroom.core.ui.ErrorBanner
 import com.example.musicroom.core.ui.PrimaryButton
 import com.example.musicroom.feature.auth.data.AuthError
@@ -36,6 +40,8 @@ fun ProfileScreen(
     onRetryClick: () -> Unit,
     onEditClick: () -> Unit,
     onBackClick: () -> Unit,
+    onChangeAvatarClick: () -> Unit,
+    onDeleteAvatarClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -65,12 +71,31 @@ fun ProfileScreen(
 
             is ProfileState.Loaded -> {
                 val profile: OwnProfile = state.profile
-
-                // pas encore fait
                 Avatar(
                     username = profile.username,
+                    avatarUrl = profile.avatarUrl,
                     modifier = Modifier.align(Alignment.CenterHorizontally),
                 )
+                val actionError: AuthError? = state.actionError
+                if (actionError != null) {
+                    ErrorBanner(message = actionError.toMessage())
+                }
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                ) {
+                    OutlinedButton(onClick = onChangeAvatarClick, enabled = !state.isBusy) {
+                        Text(if (profile.avatarUrl == null) "Ajouter une photo" else "Changer la photo")
+                    }
+                    if (profile.avatarUrl != null) {
+                        TextButton(onClick = onDeleteAvatarClick, enabled = !state.isBusy) {
+                            Text("Supprimer")
+                        }
+                    }
+                }
+                if (state.isBusy) {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                }
 
 
                 SectionTitle("Public")
@@ -106,19 +131,32 @@ fun ProfileScreen(
 }
 
 @Composable
-private fun Avatar(username: String, modifier: Modifier = Modifier) {
+private fun Avatar(username: String, avatarUrl: String?, modifier: Modifier = Modifier) {
     val initial: String = username.firstOrNull()?.uppercase() ?: "?"
     Box(
+
         modifier = modifier
             .size(88.dp)
             .background(MaterialTheme.colorScheme.primary, CircleShape),
         contentAlignment = Alignment.Center,
     ) {
-        Text(
-            text = initial,
-            style = MaterialTheme.typography.displaySmall,
-            color = MaterialTheme.colorScheme.onPrimary,
-        )
+        if (avatarUrl != null) {
+            AsyncImage(
+                model = avatarUrl,
+                contentDescription = "Photo de profil",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(CircleShape),
+            )
+
+        } else {
+            Text(
+                text = initial,
+                style = MaterialTheme.typography.displaySmall,
+                color = MaterialTheme.colorScheme.onPrimary,
+            )
+        }
     }
 }
 
@@ -183,7 +221,7 @@ private fun ProfileLoadingPreview() {
     MusicroomTheme {
         ProfileScreen(
             state = ProfileState.Loading,
-            onRetryClick = {}, onEditClick = {}, onBackClick = {},
+            onRetryClick = {}, onEditClick = {}, onBackClick = {}, onChangeAvatarClick = {}, onDeleteAvatarClick = {}
         )
     }
 }
@@ -194,7 +232,7 @@ private fun ProfileLoadFailedPreview() {
     MusicroomTheme {
         ProfileScreen(
             state = ProfileState.LoadFailed(AuthError.Network),
-            onRetryClick = {}, onEditClick = {}, onBackClick = {},
+            onRetryClick = {}, onEditClick = {}, onBackClick = {},onChangeAvatarClick = {}, onDeleteAvatarClick = {}
         )
     }
 }
@@ -205,7 +243,7 @@ private fun ProfileLoadedPreview() {
     MusicroomTheme {
         ProfileScreen(
             state = ProfileState.Loaded(previewProfile),
-            onRetryClick = {}, onEditClick = {}, onBackClick = {},
+            onRetryClick = {}, onEditClick = {}, onBackClick = {}, onChangeAvatarClick = {}, onDeleteAvatarClick = {}
         )
     }
 }
@@ -223,7 +261,7 @@ private fun ProfileEmptyPreview() {
                     birthDate = null,
                 ),
             ),
-            onRetryClick = {}, onEditClick = {}, onBackClick = {},
+            onRetryClick = {}, onEditClick = {}, onBackClick = {}, onChangeAvatarClick = {}, onDeleteAvatarClick = {}
         )
     }
 }
