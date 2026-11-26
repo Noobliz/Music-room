@@ -10,6 +10,7 @@ import {
   proposalParams,
   proposeTrackBody,
   queueSchema,
+  voteBody,
 } from '../schemas/track-vote.schema.js';
 
 const PROPOSALS_PER_MINUTE = 10;
@@ -20,9 +21,14 @@ const readErrors = {
   401: errorResponseSchema.describe('Missing or invalid access token'),
   404: errorResponseSchema.describe('SPACE_NOT_FOUND'),
 };
+const presenceRule =
+  'In a location_time event, a non-owner must send position, be inside the vote zone and act during its time slot, checked against the server clock in the time zone of the event.';
 const writeErrors = {
   ...readErrors,
-  403: errorResponseSchema.describe('SPACE_ACTION_FORBIDDEN'),
+  400: errorResponseSchema.describe('VALIDATION_ERROR or POSITION_REQUIRED'),
+  403: errorResponseSchema.describe(
+    'SPACE_ACTION_FORBIDDEN, VOTE_NOT_STARTED, VOTE_ENDED or OUTSIDE_VOTE_ZONE',
+  ),
   429: errorResponseSchema.describe('RATE_LIMITED'),
 };
 
@@ -39,7 +45,10 @@ export const trackVoteRoutes: FastifyPluginAsyncZod = async (server) => {
     Params: SpaceIdParams;
     Body: z.infer<typeof proposeTrackBody>;
   }>({ max: PROPOSALS_PER_MINUTE });
-  const limitVotes = server.rateLimit<{ Params: z.infer<typeof proposalParams> }>({
+  const limitVotes = server.rateLimit<{
+    Params: z.infer<typeof proposalParams>;
+    Body: z.infer<typeof voteBody>;
+  }>({
     max: VOTES_PER_MINUTE,
   });
   server.get(
@@ -61,7 +70,7 @@ export const trackVoteRoutes: FastifyPluginAsyncZod = async (server) => {
       schema: {
         ...secured,
         summary: 'Propose a catalog track',
-        description: `Up to ${PROPOSALS_PER_MINUTE} proposals per minute per user across events.`,
+        description: `Up to ${PROPOSALS_PER_MINUTE} proposals per minute per user across events. ${presenceRule}`,
         params: spaceIdParamsSchema,
         body: proposeTrackBody,
         response: {
@@ -77,7 +86,8 @@ export const trackVoteRoutes: FastifyPluginAsyncZod = async (server) => {
   const voteSchema = {
     ...secured,
     params: proposalParams,
-    description: `Adding and removing a vote are idempotent and share a limit of ${VOTES_PER_MINUTE} requests per minute per user across events.`,
+    body: voteBody,
+    description: `Adding and removing a vote are idempotent and share a limit of ${VOTES_PER_MINUTE} requests per minute per user across events. ${presenceRule}`,
     response: {
       ...writeErrors,
       204: z.null(),
