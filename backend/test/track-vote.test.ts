@@ -165,6 +165,71 @@ describe('Track Vote REST API', () => {
     expect(await queue()).toMatchObject([{ id, voteCount: 0, hasVoted: false }]);
   });
 
+  it('limits votes to the place and the time slot of the event, in its time zone', async () => {
+    const owner = await createParticipant();
+    const guest = await createParticipant();
+    const timeZone = 'Pacific/Kiritimati';
+    const localTime = (offsetMinutes: number) =>
+      new Date(Date.now() + offsetMinutes * 60_000)
+        .toLocaleString('sv-SE', { timeZone })
+        .replace(' ', 'T')
+        .slice(0, 16);
+    const zone = (startsIn: number, endsIn: number) => ({
+      latitude: 48.8966,
+      longitude: 2.3185,
+      radiusMeters: 200,
+      startsAt: localTime(startsIn),
+      endsAt: localTime(endsIn),
+      timeZone,
+    });
+    const created = await server.inject({
+      method: 'POST',
+      url: '/spaces',
+      headers: owner,
+      payload: {
+        kind: 'event',
+        name: 'Rooftop party',
+        accessMode: 'location_time',
+        voteZone: zone(-60, 60),
+      },
+    });
+    expect(created.statusCode).toBe(201);
+    expect(created.json()).toMatchObject({ accessMode: 'location_time', voteZone: { timeZone } });
+    const url = `/spaces/${created.json().id}`;
+    const proposal = await server.inject({
+      method: 'POST',
+      url: url + '/proposals',
+      headers: owner,
+      payload: { trackId },
+    });
+    expect(proposal.statusCode).toBe(201);
+    const vote = (position?: { latitude: number; longitude: number }) =>
+      server.inject({
+        method: 'PUT',
+        url: `${url}/proposals/${proposal.json().id}/vote`,
+        headers: guest,
+        payload: { position },
+      });
+    const errorCode = async (position?: { latitude: number; longitude: number }) =>
+      (await vote(position)).json().error.code;
+    const inside = { latitude: 48.8971, longitude: 2.3192 };
+    expect((await vote(inside)).statusCode).toBe(204);
+    expect(await errorCode({ latitude: 48.8566, longitude: 2.3522 })).toBe('OUTSIDE_VOTE_ZONE');
+    expect(await errorCode()).toBe('POSITION_REQUIRED');
+    expect(await errorCode({ latitude: 91, longitude: 0 })).toBe('VALIDATION_ERROR');
+    const reschedule = async (startsIn: number, endsIn: number) =>
+      server.inject({
+        method: 'PATCH',
+        url,
+        headers: owner,
+        payload: { voteZone: zone(startsIn, endsIn) },
+      });
+    expect((await reschedule(-120, -60)).statusCode).toBe(200);
+    expect(await errorCode(inside)).toBe('VOTE_ENDED');
+    expect((await reschedule(60, 120)).statusCode).toBe(200);
+    expect(await errorCode(inside)).toBe('VOTE_NOT_STARTED');
+  });
+
   it('limits proposals separately from vote changes while keeping the queue readable', async () => {
     const headers = await createParticipant();
     const created = await server.inject({
