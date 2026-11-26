@@ -1,15 +1,11 @@
 package com.example.musicroom.feature.profile.ui
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
@@ -20,14 +16,12 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImage
 import com.example.musicroom.core.ui.ErrorBanner
 import com.example.musicroom.core.ui.PrimaryButton
+import com.example.musicroom.core.ui.UserAvatar
 import com.example.musicroom.feature.auth.data.AuthError
 import com.example.musicroom.feature.auth.ui.toMessage
 import com.example.musicroom.feature.profile.data.MusicGenre
@@ -71,7 +65,7 @@ fun ProfileScreen(
 
             is ProfileState.Loaded -> {
                 val profile: OwnProfile = state.profile
-                Avatar(
+                UserAvatar(
                     username = profile.username,
                     avatarUrl = profile.avatarUrl,
                     modifier = Modifier.align(Alignment.CenterHorizontally),
@@ -131,37 +125,7 @@ fun ProfileScreen(
 }
 
 @Composable
-private fun Avatar(username: String, avatarUrl: String?, modifier: Modifier = Modifier) {
-    val initial: String = username.firstOrNull()?.uppercase() ?: "?"
-    Box(
-
-        modifier = modifier
-            .size(88.dp)
-            .background(MaterialTheme.colorScheme.primary, CircleShape),
-        contentAlignment = Alignment.Center,
-    ) {
-        if (avatarUrl != null) {
-            AsyncImage(
-                model = avatarUrl,
-                contentDescription = "Photo de profil",
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(CircleShape),
-            )
-
-        } else {
-            Text(
-                text = initial,
-                style = MaterialTheme.typography.displaySmall,
-                color = MaterialTheme.colorScheme.onPrimary,
-            )
-        }
-    }
-}
-
-@Composable
-private fun SectionTitle(text: String) {
+fun SectionTitle(text: String) {
     Text(
         text = text,
         style = MaterialTheme.typography.titleMedium,
@@ -172,7 +136,7 @@ private fun SectionTitle(text: String) {
 
 // Une ligne « libellé + valeur ». Valeur absente : « Non renseigné » en gris.
 @Composable
-private fun ProfileField(label: String, value: String?) {
+fun ProfileField(label: String, value: String?) {
     Column {
         Text(
             text = label,

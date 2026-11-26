@@ -50,6 +50,11 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.safeDrawing
+import com.example.musicroom.feature.friends.data.Relationship
+import com.example.musicroom.feature.friends.ui.UserProfileScreen
+import com.example.musicroom.feature.friends.ui.UserProfileViewModel
+import com.example.musicroom.feature.friends.ui.UserSearchScreen
+import com.example.musicroom.feature.friends.ui.UserSearchViewModel
 import com.example.musicroom.feature.profile.ui.EditProfileScreen
 import com.example.musicroom.feature.profile.ui.EditProfileState
 import com.example.musicroom.feature.profile.ui.EditProfileViewModel
@@ -77,6 +82,10 @@ class MainActivity : ComponentActivity() {
     private val profileViewModel: ProfileViewModel by viewModels { ProfileViewModel.Factory }
 
     private val editProfileViewModel: EditProfileViewModel by viewModels { EditProfileViewModel.Factory }
+
+    private val userSearchViewModel: UserSearchViewModel by viewModels { UserSearchViewModel.Factory }
+
+    private val userProfileViewModel: UserProfileViewModel by viewModels { UserProfileViewModel.Factory }
     private val googleCredentialProvider: GoogleCredentialProvider = GoogleCredentialProvider()
     private val healthViewModel: HealthViewModel by viewModels()
 
@@ -110,6 +119,10 @@ class MainActivity : ComponentActivity() {
             var showLinkedAccounts: Boolean by rememberSaveable { mutableStateOf(false) }
             var showProfile: Boolean by rememberSaveable { mutableStateOf(false) }
             var showEditProfile: Boolean by rememberSaveable { mutableStateOf(false) }
+            var showUserSearch: Boolean by rememberSaveable { mutableStateOf(false) }
+            var selectedUserId: String? by rememberSaveable { mutableStateOf(null) }
+            var selectedRelationship: Relationship? by rememberSaveable { mutableStateOf(null) }
+
             val currentUser: AuthUser? by mainViewModel.currentUser.collectAsState()
 
             val pickAvatar = rememberLauncherForActivityResult(
@@ -141,6 +154,12 @@ class MainActivity : ComponentActivity() {
                                 profileViewModel.reset()
                                 showEditProfile = false
                                 editProfileViewModel.reset()
+                                showUserSearch = false
+                                userSearchViewModel.reset()
+                                userProfileViewModel.reset()
+                                selectedUserId = null
+                                selectedRelationship = null
+
                             }
                         }
                         if (deepLink is AuthDeepLink.VerifyEmail) {
@@ -240,6 +259,39 @@ class MainActivity : ComponentActivity() {
                                     onCancelClick = { showEditProfile = false },
                                     modifier = Modifier.padding(innerPadding),
                                 )
+                            } else if (selectedUserId != null) {
+                                val userId: String = selectedUserId!!
+                                LaunchedEffect(userId) {
+                                    userProfileViewModel.load(
+                                        userId,
+                                        selectedRelationship ?: Relationship.NONE
+                                    )
+                                }
+                                BackHandler { selectedUserId = null }
+                                UserProfileScreen(
+                                    state = userProfileViewModel.state,
+                                    onRetryClick = {
+                                        userProfileViewModel.load(
+                                            userId,
+                                            selectedRelationship ?: Relationship.NONE
+                                        )
+                                    },
+                                    onBackClick = { selectedUserId = null },
+                                    modifier = Modifier.padding(innerPadding),
+                                )
+                            } else if (showUserSearch) {
+                                BackHandler { showUserSearch = false }
+                                UserSearchScreen(
+                                    state = userSearchViewModel.state,
+                                    onQueryChange = { userSearchViewModel.onQueryChange(it) },
+                                    onSearchClick = { userSearchViewModel.search() },
+                                    onUserClick = { user ->
+                                        selectedUserId = user.id
+                                        selectedRelationship = user.relationship
+                                    },
+                                    onBackClick = { showUserSearch = false },
+                                    modifier = Modifier.padding(innerPadding),
+                                )
                             } else if (showProfile) {
                                 LaunchedEffect(Unit) {
                                     profileViewModel.load()
@@ -276,6 +328,7 @@ class MainActivity : ComponentActivity() {
                                     },
                                     onLinkedAccountsClick = { showLinkedAccounts = true },
                                     onProfileClick = { showProfile = true },
+                                    onUserSearchClick = { showUserSearch= true },
                                     modifier = Modifier.padding(innerPadding),
                                 )
                             }
