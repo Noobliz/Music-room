@@ -16,5 +16,10 @@ fun ErrorBody.toAuthError(httpCode: Int): AuthError =
         "PROFILE_NOT_FOUND" -> AuthError.ProfileNotFound
         "PAYLOAD_TOO_LARGE" -> AuthError.PayloadTooLarge
         "UNSUPPORTED_MEDIA_TYPE" -> AuthError.UnsupportedMediaType
+        "CANNOT_FRIEND_SELF" -> AuthError.CannotFriendSelf
+        "ALREADY_FRIENDS" -> AuthError.AlreadyFriends
+        "FRIEND_REQUEST_EXISTS" -> AuthError.FriendRequestExists
+        "FRIEND_REQUEST_NOT_FOUND" -> AuthError.FriendRequestNotFound
+        "FRIEND_NOT_FOUND" -> AuthError.FriendNotFound
         else -> AuthError.Unknown(httpCode)
     }

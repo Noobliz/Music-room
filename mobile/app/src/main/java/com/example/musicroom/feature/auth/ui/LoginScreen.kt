@@ -106,7 +106,7 @@ fun LoginScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
         TextButton(onClick = onGoToForgotPasswordClick) {
-            Text("Mot de passe oublie")
+            Text("Mot de passe oublié")
         }
         TextButton(onClick = onGoToSignupClick) {
             Text("Pas de compte ? S'inscrire")

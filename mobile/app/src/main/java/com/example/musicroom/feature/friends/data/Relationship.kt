@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 enum class Relationship {
-//    ici seralName sert a donner une valeur differente de l'ENUM pour pouvoir etre interprete dans le json
+//    ici serialName sert a donner une valeur differente de l'ENUM pour pouvoir etre interprete dans le json
     @SerialName("none") NONE,
     @SerialName("friend") FRIEND,
     @SerialName("request_sent") REQUEST_SENT,

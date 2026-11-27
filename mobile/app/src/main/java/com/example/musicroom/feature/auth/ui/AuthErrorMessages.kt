@@ -21,4 +21,9 @@ fun AuthError.toMessage(): String =
         AuthError.ProfileNotFound -> "Ce profil n'existe pas."
         AuthError.PayloadTooLarge -> "L'image est trop lourde (50mo maximum)."
         AuthError.UnsupportedMediaType -> "Format non pris en charge : choisissez une image JPEG, PNG ou WebP."
+        AuthError.CannotFriendSelf -> "Vous ne pouvez pas vous ajouter vous-même."
+        AuthError.AlreadyFriends -> "Vous êtes déjà amis."
+        AuthError.FriendRequestExists -> "Une demande est déjà en attente avec cette personne."
+        AuthError.FriendRequestNotFound -> "Cette demande n'existe plus. Actualisez la liste."
+        AuthError.FriendNotFound -> "Cette personne ne fait plus partie de vos amis."
     }

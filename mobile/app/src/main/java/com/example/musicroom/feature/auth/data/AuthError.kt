@@ -32,4 +32,15 @@ sealed interface AuthError {
 
     data object UnsupportedMediaType: AuthError
 
+    // Amis (ticket 006)
+    data object CannotFriendSelf : AuthError
+
+    data object AlreadyFriends : AuthError
+
+    data object FriendRequestExists : AuthError
+
+    data object FriendRequestNotFound : AuthError
+
+    data object FriendNotFound : AuthError
+
 }
