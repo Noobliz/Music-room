@@ -87,7 +87,8 @@ fun PrimaryButton(
         shape = MaterialTheme.shapes.medium,
         modifier = modifier
             .fillMaxWidth()
-            .heightIn(min = 52.dp),
+            .heightIn(min = 52.dp)
+            .snowCap(),
     ) {
         if (loading) {
             CircularProgressIndicator(

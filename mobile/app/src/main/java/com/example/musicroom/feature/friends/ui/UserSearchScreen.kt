@@ -42,49 +42,52 @@ fun UserSearchScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
             .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        ScreenHeader(title = "Rechercher des utilisateurs", onBackClick = onBackClick)
+        ScreenHeader(title = "Rechercher", onBackClick = onBackClick)
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            AppTextField(
+                value = state.query,
+                onValueChange = onQueryChange,
+                label = "Pseudo",
+            )
+            PrimaryButton(
+                text = "Rechercher",
+                onClick = onSearchClick,
+                loading = state.results is SearchResults.Loading,
+            )
 
-        AppTextField(
-            value = state.query,
-            onValueChange = onQueryChange,
-            label = "Pseudo",
-        )
-        PrimaryButton(
-            text = "Rechercher",
-            onClick = onSearchClick,
-            loading = state.results is SearchResults.Loading,
-        )
+            when (val results: SearchResults = state.results) {
+                SearchResults.Idle -> {
+                    HintText("Tapez une partie d'un pseudo, puis lancez la recherche.")
+                }
 
-        when (val results: SearchResults = state.results) {
-            SearchResults.Idle -> {
-                HintText("Tapez une partie d'un pseudo, puis lancez la recherche.")
-            }
+                SearchResults.Loading -> {
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.CenterHorizontally),
+                    )
+                }
 
-            SearchResults.Loading -> {
-                CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.CenterHorizontally),
-                )
-            }
+                is SearchResults.Failed -> {
+                    ErrorBanner(message = results.error.toMessage())
+                }
 
-            is SearchResults.Failed -> {
-                ErrorBanner(message = results.error.toMessage())
-            }
-
-            is SearchResults.Loaded -> {
-                if (results.users.isEmpty()) {
-                    HintText("Aucun utilisateur trouvé.")
-                } else {
-                    results.users.forEach { user: UserSearchResult ->
-                        UserRow(user = user, onClick = { onUserClick(user) })
+                is SearchResults.Loaded -> {
+                    if (results.users.isEmpty()) {
+                        HintText("Aucun utilisateur trouvé.")
+                    } else {
+                        results.users.forEach { user: UserSearchResult ->
+                            UserRow(user = user, onClick = { onUserClick(user) })
+                        }
                     }
                 }
             }
         }
-
     }
 }
 

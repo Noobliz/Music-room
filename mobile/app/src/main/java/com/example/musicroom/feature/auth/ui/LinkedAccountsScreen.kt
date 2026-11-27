@@ -37,77 +37,79 @@ fun LinkedAccountsScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
             .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-
         ScreenHeader(title = "Comptes liés", onBackClick = onBackClick)
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            when (state) {
+                LinkedAccountsState.Loading -> {
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.CenterHorizontally),
+                    )
+                }
 
-        when (state) {
-            LinkedAccountsState.Loading -> {
-                CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.CenterHorizontally),
-                )
-            }
+                is LinkedAccountsState.LoadFailed -> {
+                    ErrorBanner(message = state.error.toMessage())
+                    PrimaryButton(text = "Réessayer", onClick = onRetryClick)
+                }
 
-            is LinkedAccountsState.LoadFailed -> {
-                ErrorBanner(message = state.error.toMessage())
-                PrimaryButton(text = "Réessayer", onClick = onRetryClick)
-            }
-
-            is LinkedAccountsState.Loaded -> {
-                state.identities.forEach { identity: Identity ->
-                    Column {
-                        Text(
-                            text = providerLabel(identity.provider),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
-                        )
-                        if (identity.email != null) {
+                is LinkedAccountsState.Loaded -> {
+                    state.identities.forEach { identity: Identity ->
+                        Column {
                             Text(
-                                text = identity.email,
-                                style = MaterialTheme.typography.bodyMedium,
+                                text = providerLabel(identity.provider),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                            if (identity.email != null) {
+                                Text(
+                                    text = identity.email,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    }
+
+                    // Erreur d'action (liaison / déliaison)
+                    val actionError: AuthError? = state.actionError
+                    if (actionError != null) {
+                        ErrorBanner(message = actionError.toMessage())
+                    }
+
+                    if (state.isGoogleLinked) {
+                        // On grise le bouton si c'est l'unique compte
+                        // Le back-end refuse de toute façon (LAST_IDENTITY)
+                        val canUnlink: Boolean = state.identities.size > 1
+                        OutlinedButton(
+                            onClick = onUnlinkGoogleClick,
+                            enabled = canUnlink && !state.isBusy,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text("Délier Google")
+                        }
+                        if (!canUnlink) {
+                            Text(
+                                text = "Google est le seul moyen de connexion, vous ne pouvez pas le délier.",
+                                style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
-                    }
-                }
-
-                // Erreur d'action (liaison / déliaison)
-                val actionError: AuthError? = state.actionError
-                if (actionError != null) {
-                    ErrorBanner(message = actionError.toMessage())
-                }
-
-                if (state.isGoogleLinked) {
-                    // On grise le bouton si c'est l'unique compte
-                    // Le back-end refuse de toute façon (LAST_IDENTITY)
-                    val canUnlink: Boolean = state.identities.size > 1
-                    OutlinedButton(
-                        onClick = onUnlinkGoogleClick,
-                        enabled = canUnlink && !state.isBusy,
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text("Délier Google")
-                    }
-                    if (!canUnlink) {
-                        Text(
-                            text = "Google est le seul moyen de connexion, vous ne pouvez pas le délier.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    } else {
+                        PrimaryButton(
+                            text = "Lier mon compte Google",
+                            onClick = onLinkGoogleClick,
+                            loading = state.isBusy,
                         )
                     }
-                } else {
-                    PrimaryButton(
-                        text = "Lier mon compte Google",
-                        onClick = onLinkGoogleClick,
-                        loading = state.isBusy,
-                    )
                 }
             }
         }
-
     }
 }
 

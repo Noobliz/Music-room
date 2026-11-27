@@ -42,82 +42,85 @@ fun ProfileScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
             .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         ScreenHeader(title = "Mon profil", onBackClick = onBackClick)
-
-        when (state) {
-            ProfileState.Loading -> {
-                CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.CenterHorizontally),
-                )
-            }
-
-            is ProfileState.LoadFailed -> {
-                ErrorBanner(message = state.error.toMessage())
-                PrimaryButton(text = "Réessayer", onClick = onRetryClick)
-            }
-
-            is ProfileState.Loaded -> {
-                val profile: OwnProfile = state.profile
-                UserAvatar(
-                    username = profile.username,
-                    avatarUrl = profile.avatarUrl,
-                    modifier = Modifier.align(Alignment.CenterHorizontally),
-                )
-                val actionError: AuthError? = state.actionError
-                if (actionError != null) {
-                    ErrorBanner(message = actionError.toMessage())
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            when (state) {
+                ProfileState.Loading -> {
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.CenterHorizontally),
+                    )
                 }
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.align(Alignment.CenterHorizontally),
-                ) {
-                    OutlinedButton(onClick = onChangeAvatarClick, enabled = !state.isBusy) {
-                        Text(if (profile.avatarUrl == null) "Ajouter une photo" else "Changer la photo")
+
+                is ProfileState.LoadFailed -> {
+                    ErrorBanner(message = state.error.toMessage())
+                    PrimaryButton(text = "Réessayer", onClick = onRetryClick)
+                }
+
+                is ProfileState.Loaded -> {
+                    val profile: OwnProfile = state.profile
+                    UserAvatar(
+                        username = profile.username,
+                        avatarUrl = profile.avatarUrl,
+                        modifier = Modifier.align(Alignment.CenterHorizontally),
+                    )
+                    val actionError: AuthError? = state.actionError
+                    if (actionError != null) {
+                        ErrorBanner(message = actionError.toMessage())
                     }
-                    if (profile.avatarUrl != null) {
-                        TextButton(onClick = onDeleteAvatarClick, enabled = !state.isBusy) {
-                            Text("Supprimer")
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.align(Alignment.CenterHorizontally),
+                    ) {
+                        OutlinedButton(onClick = onChangeAvatarClick, enabled = !state.isBusy) {
+                            Text(if (profile.avatarUrl == null) "Ajouter une photo" else "Changer la photo")
+                        }
+                        if (profile.avatarUrl != null) {
+                            TextButton(onClick = onDeleteAvatarClick, enabled = !state.isBusy) {
+                                Text("Supprimer")
+                            }
                         }
                     }
+                    if (state.isBusy) {
+                        CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                    }
+
+
+                    SectionTitle("Public")
+                    ProfileField(label = "Pseudo", value = profile.username)
+
+                    HorizontalDivider()
+                    SectionTitle("Visible par mes amis")
+                    ProfileField(label = "Bio", value = profile.bio)
+                    ProfileField(
+                        label = "Préférences musicales",
+                        value = profile.musicGenres
+                            .takeIf { it.isNotEmpty() }
+                            ?.joinToString(", ") { genreLabel(it) },
+                    )
+
+                    HorizontalDivider()
+                    SectionTitle("Privé")
+                    ProfileField(label = "E-mail", value = profile.email)
+                    ProfileField(label = "Nom", value = profile.fullName)
+                    ProfileField(
+                        label = "Date de naissance",
+                        value = profile.birthDate?.let { formatDate(it) },
+                    )
+
+                    PrimaryButton(text = "Modifier mon profil", onClick = onEditClick)
                 }
-                if (state.isBusy) {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
-                }
-
-
-                SectionTitle("Public")
-                ProfileField(label = "Pseudo", value = profile.username)
-
-                HorizontalDivider()
-                SectionTitle("Visible par mes amis")
-                ProfileField(label = "Bio", value = profile.bio)
-                ProfileField(
-                    label = "Préférences musicales",
-                    value = profile.musicGenres
-                        .takeIf { it.isNotEmpty() }
-                        ?.joinToString(", ") { genreLabel(it) },
-                )
-
-                HorizontalDivider()
-                SectionTitle("Privé")
-                ProfileField(label = "E-mail", value = profile.email)
-                ProfileField(label = "Nom", value = profile.fullName)
-                ProfileField(
-                    label = "Date de naissance",
-                    value = profile.birthDate?.let { formatDate(it) },
-                )
-
-                PrimaryButton(text = "Modifier mon profil", onClick = onEditClick)
             }
-        }
 
+        }
     }
 }
-
 @Composable
 fun SectionTitle(text: String) {
     Text(

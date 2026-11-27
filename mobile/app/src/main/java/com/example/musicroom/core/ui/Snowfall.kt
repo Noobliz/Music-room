@@ -44,16 +44,17 @@ fun Snowfall(modifier: Modifier = Modifier) {
         }
     }
 
+//    ANIMATION TROP LOURDE POUR LE PC DE L'ECOLE
     // nb de secondes ecoulees mis a jour a chaque image
-    var time: Float by remember { mutableFloatStateOf(0f) }
-    LaunchedEffect(Unit) {
-        val start: Long = withFrameNanos { it }
-        while (true) {
-            withFrameNanos { now: Long ->
-                time = (now - start) / 1_000_000_000f //(secondes ecoulees)
-            }
-        }
-    }
+//    var time: Float by remember { mutableFloatStateOf(0f) }
+//    LaunchedEffect(Unit) {
+//        val start: Long = withFrameNanos { it }
+//        while (true) {
+//            withFrameNanos { now: Long ->
+//                time = (now - start) / 1_000_000_000f //(secondes ecoulees)
+//            }
+//        }
+//    }
 
     val flakeColor: Color =
         if (isSystemInDarkTheme()) Color.White.copy(alpha = 0.6f)
@@ -61,16 +62,17 @@ fun Snowfall(modifier: Modifier = Modifier) {
 
     // le dessin (calcul de la pos de chaque flocon a partir du temps)
     Canvas(modifier = modifier
-        .fillMaxSize()
-        .graphicsLayer(),
+        .fillMaxSize(),
+//        .graphicsLayer(),
     ) {
         flakes.forEach { flake: Snowflake ->
-            val y: Float = (flake.startY + flake.speed * time) % 1f
-            val x: Float = flake.x + flake.drift * sin(time + flake.startY * 10f)
+//            val y: Float = (flake.startY + flake.speed * time) % 1f
+//            val x: Float = flake.x + flake.drift * sin(time + flake.startY * 10f)
             drawCircle(
                 color = flakeColor,
                 radius = flake.radius.dp.toPx(),
-                center = Offset(x * size.width, y * size.height),
+//                center = Offset(x * size.width, y * size.height),
+                center = Offset(flake.x * size.width, flake.startY * size.height)
             )
         }
     }

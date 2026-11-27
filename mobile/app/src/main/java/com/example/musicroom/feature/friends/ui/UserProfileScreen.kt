@@ -41,73 +41,76 @@ fun UserProfileScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
             .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         ScreenHeader(title = null, onBackClick = onBackClick)
-
-        when (state) {
-            UserProfileState.Loading -> {
-                CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.CenterHorizontally),
-                )
-            }
-
-            is UserProfileState.LoadFailed -> {
-                ErrorBanner(message = state.error.toMessage())
-                PrimaryButton(text = "Réessayer", onClick = onRetryClick)
-            }
-
-            is UserProfileState.Loaded -> {
-                val profile: ProfileView = state.profile
-
-                // Public
-                UserAvatar(
-                    username = profile.username,
-                    avatarUrl = profile.avatarUrl,
-                    modifier = Modifier.align(Alignment.CenterHorizontally),
-                )
-                Text(
-                    text = profile.username,
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.align(Alignment.CenterHorizontally),
-                )
-                val label: String? = relationshipLabel(state.relationship)
-                if (label != null) {
-                    Text(
-                        text = label,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            when (state) {
+                UserProfileState.Loading -> {
+                    CircularProgressIndicator(
                         modifier = Modifier.align(Alignment.CenterHorizontally),
                     )
                 }
 
-                HorizontalDivider()
-                SectionTitle("Réservé aux amis")
+                is UserProfileState.LoadFailed -> {
+                    ErrorBanner(message = state.error.toMessage())
+                    PrimaryButton(text = "Réessayer", onClick = onRetryClick)
+                }
 
-                // bio et genres que pour les amis. Relationship dit
-                // si "absent" veut dire "caché" ou "non renseigné".
-                if (state.relationship == Relationship.FRIEND) {
-                    ProfileField(label = "Bio", value = profile.bio)
-                    ProfileField(
-                        label = "Préférences musicales",
-                        value = profile.musicGenres
-                            ?.takeIf { it.isNotEmpty() }
-                            ?.joinToString(", ") { genreLabel(it) },
+                is UserProfileState.Loaded -> {
+                    val profile: ProfileView = state.profile
+
+                    // Public
+                    UserAvatar(
+                        username = profile.username,
+                        avatarUrl = profile.avatarUrl,
+                        modifier = Modifier.align(Alignment.CenterHorizontally),
                     )
-                } else {
                     Text(
-                        text = "Ces informations ne sont visibles que par les amis de ${profile.username}.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Start,
+                        text = profile.username,
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.align(Alignment.CenterHorizontally),
                     )
+                    val label: String? = relationshipLabel(state.relationship)
+                    if (label != null) {
+                        Text(
+                            text = label,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.align(Alignment.CenterHorizontally),
+                        )
+                    }
+
+                    HorizontalDivider()
+                    SectionTitle("Réservé aux amis")
+
+                    // bio et genres que pour les amis. Relationship dit
+                    // si "absent" veut dire "caché" ou "non renseigné".
+                    if (state.relationship == Relationship.FRIEND) {
+                        ProfileField(label = "Bio", value = profile.bio)
+                        ProfileField(
+                            label = "Préférences musicales",
+                            value = profile.musicGenres
+                                ?.takeIf { it.isNotEmpty() }
+                                ?.joinToString(", ") { genreLabel(it) },
+                        )
+                    } else {
+                        Text(
+                            text = "Ces informations ne sont visibles que par les amis de ${profile.username}.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Start,
+                        )
+                    }
                 }
             }
         }
-
     }
 }
 

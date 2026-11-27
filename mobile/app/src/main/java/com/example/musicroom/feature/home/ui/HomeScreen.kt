@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -21,9 +22,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.musicroom.core.ui.snowCap
 import com.example.musicroom.feature.auth.data.AuthUser
+import com.example.musicroom.ui.theme.FrostGrey
+
 
 @Composable
 fun HomeScreen(
@@ -93,7 +98,7 @@ fun HomeScreen(
                         .fillMaxWidth()
                         .height(52.dp)
                 ) {
-                    Text("Voir mon profil")
+                    Text("Mon profil")
                 }
                 Spacer(modifier = Modifier.height(28.dp))
                 OutlinedButton(
@@ -120,9 +125,14 @@ fun HomeScreen(
                 OutlinedButton(
                     onClick = onLogoutClick,
                     shape = MaterialTheme.shapes.medium,
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        FrostGrey,
+                        contentColor = Color.White
+                    ),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(52.dp),
+                        .height(52.dp)
+                        .snowCap(),
                 ) {
                     Text("Se déconnecter")
                 }
