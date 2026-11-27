@@ -1,13 +1,14 @@
 import { z } from 'zod';
 
 import { friendUserSchema } from './friend.schema.js';
+import { voteZoneInputSchema, voteZoneSchema } from './vote-zone.schema.js';
 
 export const SPACE_SEARCH_DEFAULT_LIMIT = 20;
 export const SPACE_SEARCH_MAX_LIMIT = 50;
 
 export const SPACE_KINDS = ['event', 'playlist'] as const;
 export const SPACE_VISIBILITIES = ['public', 'private'] as const;
-export const SPACE_ACCESS_MODES = ['everyone', 'invited_only'] as const;
+export const SPACE_ACCESS_MODES = ['everyone', 'invited_only', 'location_time'] as const;
 export const SPACE_ROLES = ['owner', 'invited', 'none'] as const;
 
 const spaceKindSchema = z
@@ -21,7 +22,7 @@ const spaceVisibilitySchema = z
 const spaceAccessModeSchema = z
   .enum(SPACE_ACCESS_MODES)
   .describe(
-    'everyone: anyone who can open the space can act in it; invited_only: only the owner and invited users can act',
+    'everyone: anyone who can open the space can act in it; invited_only: only the owner and invited users can act; location_time (events only): anyone who can open the event can act, but only from inside its voteZone during its time slot, the owner excepted',
   );
 
 const spaceNameSchema = z.string().trim().min(1).max(100);
@@ -50,7 +51,12 @@ export const spaceSchema = z
       .describe('owner, invited, or none when I neither own nor was invited to the space'),
     canAct: z
       .boolean()
-      .describe('Whether I can act in the space (vote, propose, edit the playlist...)'),
+      .describe(
+        'Whether I can act in the space (vote, propose, edit the playlist...); in location_time mode the server still checks my position and the time slot on each action',
+      ),
+    voteZone: voteZoneSchema
+      .nullable()
+      .describe('Set only for an event in location_time mode; send position with each action'),
     version: z
       .number()
       .int()
@@ -79,6 +85,7 @@ export const createSpaceBodySchema = z
     description: spaceDescriptionSchema.optional(),
     visibility: spaceVisibilitySchema.default('public'),
     accessMode: spaceAccessModeSchema.default('everyone'),
+    voteZone: voteZoneInputSchema.optional(),
   })
   .strict();
 
@@ -88,6 +95,9 @@ export const updateSpaceBodySchema = z
     description: spaceDescriptionSchema.optional(),
     visibility: spaceVisibilitySchema.optional(),
     accessMode: spaceAccessModeSchema.optional(),
+    voteZone: voteZoneInputSchema
+      .optional()
+      .describe('Replaces the place and time slot of an event in location_time mode'),
   })
   .strict()
   .refine((body) => Object.values(body).some((value) => value !== undefined), {
@@ -143,6 +153,7 @@ export const inviteToSpaceBodySchema = z
   .strict();
 
 export type SpaceKind = (typeof SPACE_KINDS)[number];
+export type SpaceAccessMode = (typeof SPACE_ACCESS_MODES)[number];
 export type SpaceRole = (typeof SPACE_ROLES)[number];
 export type SpaceUser = z.infer<typeof spaceUserSchema>;
 export type SpaceView = z.infer<typeof spaceSchema>;

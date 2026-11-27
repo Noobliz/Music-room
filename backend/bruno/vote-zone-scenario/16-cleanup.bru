@@ -1,0 +1,21 @@
+meta {
+  name: Owner deletes the scenario event
+  type: http
+  seq: 16
+}
+
+delete {
+  url: {{baseUrl}}/spaces/{{zoneSpaceId}}
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{ownerToken}}
+}
+
+tests {
+  test("the event and its queue are deleted", () => {
+    expect(res.status).to.equal(204);
+  });
+}

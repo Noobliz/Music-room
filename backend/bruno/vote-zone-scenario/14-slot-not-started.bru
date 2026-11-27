@@ -1,0 +1,41 @@
+meta {
+  name: Owner moves the time slot to the future
+  type: http
+  seq: 14
+}
+
+patch {
+  url: {{baseUrl}}/spaces/{{zoneSpaceId}}
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{ownerToken}}
+}
+
+body:json {
+  {
+    "voteZone": {
+      "latitude": 48.8966,
+      "longitude": 2.3185,
+      "radiusMeters": 200,
+      "startsAt": "{{zoneStartsAt}}",
+      "endsAt": "{{zoneEndsAt}}",
+      "timeZone": "UTC"
+    }
+  }
+}
+
+script:pre-request {
+  const localTime = (minutes) => new Date(Date.now() + minutes * 60000).toISOString().slice(0, 16);
+  bru.setVar("zoneStartsAt", localTime(60));
+  bru.setVar("zoneEndsAt", localTime(180));
+}
+
+tests {
+  test("the time slot is replaced", () => {
+    expect(res.status).to.equal(200);
+    expect(res.body.voteZone.endsAt).to.equal(`${bru.getVar("zoneEndsAt")}:00`);
+  });
+}

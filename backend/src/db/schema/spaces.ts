@@ -15,7 +15,11 @@ import { authenticatedRole, authUid, authUsers } from 'drizzle-orm/supabase';
 
 export const spaceKind = pgEnum('space_kind', ['event', 'playlist']);
 export const spaceVisibility = pgEnum('space_visibility', ['public', 'private']);
-export const spaceAccessMode = pgEnum('space_access_mode', ['everyone', 'invited_only']);
+export const spaceAccessMode = pgEnum('space_access_mode', [
+  'everyone',
+  'invited_only',
+  'location_time',
+]);
 
 export const spaces = pgTable(
   'spaces',

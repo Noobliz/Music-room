@@ -1,0 +1,52 @@
+meta {
+  name: Owner creates an event open to votes on site for two hours
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/spaces
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{ownerToken}}
+}
+
+body:json {
+  {
+    "kind": "event",
+    "name": "{{zoneEventName}}",
+    "visibility": "public",
+    "accessMode": "location_time",
+    "voteZone": {
+      "latitude": 48.8966,
+      "longitude": 2.3185,
+      "radiusMeters": 200,
+      "startsAt": "{{zoneStartsAt}}",
+      "endsAt": "{{zoneEndsAt}}",
+      "timeZone": "UTC"
+    }
+  }
+}
+
+script:pre-request {
+  const localTime = (minutes) => new Date(Date.now() + minutes * 60000).toISOString().slice(0, 16);
+  bru.setVar("zoneEventName", `bruno-vote-zone-${Date.now()}`);
+  bru.setVar("zoneStartsAt", localTime(-60));
+  bru.setVar("zoneEndsAt", localTime(60));
+}
+
+script:post-response {
+  if (res.status === 201) bru.setVar("zoneSpaceId", res.body.id);
+}
+
+tests {
+  test("the event is created with its vote zone", () => {
+    expect(res.status).to.equal(201);
+    expect(res.body.accessMode).to.equal("location_time");
+    expect(res.body.voteZone).to.include({ radiusMeters: 200, timeZone: "UTC" });
+    expect(res.body.voteZone.startsAt).to.equal(`${bru.getVar("zoneStartsAt")}:00`);
+  });
+}

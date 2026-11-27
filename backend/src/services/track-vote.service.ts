@@ -6,8 +6,10 @@ import { findSpaceMembers } from '../models/space.model.js';
 import { lockUserForQueueWrite } from '../models/user.model.js';
 import { type EventQueue } from '../schemas/track-vote.schema.js';
 import { isSubscribed, subscribersOf } from './realtime.service.js';
+import { type Position } from '../schemas/vote-zone.schema.js';
 import {
   requireActionableSpace,
+  requirePresence,
   requireViewableSpace,
   requireLockedSpace,
   resolveAccess,
@@ -80,13 +82,19 @@ export const publishQueue = (log: FastifyBaseLogger, spaceId: string): void => {
   });
 };
 
-const requireQueueWrite = async (tx: DbTransaction, auth: AuthContext, spaceId: string) => {
+const requireQueueWrite = async (
+  tx: DbTransaction,
+  auth: AuthContext,
+  spaceId: string,
+  position: Position | undefined,
+) => {
   if (!(await lockUserForQueueWrite(tx, auth.userId))) {
     throw new AppError(401, 'TOKEN_INVALID', 'The account no longer exists');
   }
   const space = await requireLockedSpace(tx, auth, spaceId, 'no key update');
   requireEvent(space);
   requireActionableSpace(space);
+  await requirePresence(tx, space, position);
 };
 
 export const proposeTrack = async (
@@ -94,11 +102,12 @@ export const proposeTrack = async (
   auth: AuthContext,
   spaceId: string,
   trackId: string,
+  position: Position | undefined,
 ) => {
   let proposal;
   try {
     proposal = await db.transaction(async (tx) => {
-      await requireQueueWrite(tx, auth, spaceId);
+      await requireQueueWrite(tx, auth, spaceId, position);
       return insertProposal(tx, spaceId, trackId, auth.userId);
     });
   } catch (error) {
@@ -123,9 +132,10 @@ export const setVote = async (
   spaceId: string,
   proposalId: string,
   voted: boolean,
+  position: Position | undefined,
 ) => {
   const result = await db.transaction(async (tx) => {
-    await requireQueueWrite(tx, auth, spaceId);
+    await requireQueueWrite(tx, auth, spaceId, position);
     return setQueuedVote(tx, spaceId, proposalId, auth.userId, voted);
   });
   if (result === 'missing') {

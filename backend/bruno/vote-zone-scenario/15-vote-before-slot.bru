@@ -1,0 +1,28 @@
+meta {
+  name: Friend votes before the slot
+  type: http
+  seq: 15
+}
+
+put {
+  url: {{baseUrl}}/spaces/{{zoneSpaceId}}/proposals/{{zoneProposalId}}/vote
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{friendToken}}
+}
+
+body:json {
+  {
+    "position": { "latitude": 48.8971, "longitude": 2.3192 }
+  }
+}
+
+tests {
+  test("the request is refused with VOTE_NOT_STARTED", () => {
+    expect(res.status).to.equal(403);
+    expect(res.body.error.code).to.equal("VOTE_NOT_STARTED");
+  });
+}

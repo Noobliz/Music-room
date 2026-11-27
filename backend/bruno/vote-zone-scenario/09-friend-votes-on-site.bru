@@ -1,0 +1,27 @@
+meta {
+  name: Friend votes from the event
+  type: http
+  seq: 9
+}
+
+put {
+  url: {{baseUrl}}/spaces/{{zoneSpaceId}}/proposals/{{zoneProposalId}}/vote
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{friendToken}}
+}
+
+body:json {
+  {
+    "position": { "latitude": 48.8971, "longitude": 2.3192 }
+  }
+}
+
+tests {
+  test("the request succeeds", () => {
+    expect(res.status).to.equal(204);
+  });
+}
