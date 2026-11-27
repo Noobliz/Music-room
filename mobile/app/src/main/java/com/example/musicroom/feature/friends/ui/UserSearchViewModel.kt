@@ -43,6 +43,12 @@ class UserSearchViewModel(
 
     }
 
+    // Au retour d'un profil, la relation a pu changer (demande envoyée, ami retiré...) :
+    // on relance la dernière recherche pour ne pas afficher des libellés périmés.
+    fun refresh() {
+        if (state.results is SearchResults.Loaded) search()
+    }
+
     fun reset() {
         state = UserSearchState()
     }

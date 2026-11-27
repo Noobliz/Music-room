@@ -37,6 +37,7 @@ fun HomeScreen(
     onLinkedAccountsClick: () -> Unit,
     onProfileClick: () -> Unit,
     onUserSearchClick: () -> Unit,
+    onFriendsClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val initial: String = user.username.firstOrNull()?.uppercase() ?: "?"
@@ -109,6 +110,16 @@ fun HomeScreen(
                         .height(52.dp)
                 ) {
                     Text("Rechercher des utilisateurs")
+                }
+                Spacer(modifier = Modifier.height(28.dp))
+                OutlinedButton(
+                    onClick = onFriendsClick,
+                    shape = MaterialTheme.shapes.large,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp)
+                ) {
+                    Text("Mes amis")
                 }
                 Spacer(modifier = Modifier.height(28.dp))
                 OutlinedButton(

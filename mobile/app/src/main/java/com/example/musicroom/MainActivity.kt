@@ -52,7 +52,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.safeDrawing
 import com.example.musicroom.core.ui.Snowfall
+import com.example.musicroom.feature.friends.data.Friend
+import com.example.musicroom.feature.friends.data.FriendRequest
 import com.example.musicroom.feature.friends.data.Relationship
+import com.example.musicroom.feature.friends.ui.FriendsScreen
+import com.example.musicroom.feature.friends.ui.FriendsViewModel
 import com.example.musicroom.feature.friends.ui.UserProfileScreen
 import com.example.musicroom.feature.friends.ui.UserProfileViewModel
 import com.example.musicroom.feature.friends.ui.UserSearchScreen
@@ -88,6 +92,8 @@ class MainActivity : ComponentActivity() {
     private val userSearchViewModel: UserSearchViewModel by viewModels { UserSearchViewModel.Factory }
 
     private val userProfileViewModel: UserProfileViewModel by viewModels { UserProfileViewModel.Factory }
+
+    private val friendsViewModel: FriendsViewModel by viewModels { FriendsViewModel.Factory }
     private val googleCredentialProvider: GoogleCredentialProvider = GoogleCredentialProvider()
     private val healthViewModel: HealthViewModel by viewModels()
 
@@ -124,6 +130,14 @@ class MainActivity : ComponentActivity() {
             var showUserSearch: Boolean by rememberSaveable { mutableStateOf(false) }
             var selectedUserId: String? by rememberSaveable { mutableStateOf(null) }
             var selectedRelationship: Relationship? by rememberSaveable { mutableStateOf(null) }
+            var selectedRequestId: String? by rememberSaveable { mutableStateOf(null) }
+            var showFriends: Boolean by rememberSaveable { mutableStateOf(false) }
+
+            fun openUserProfile(userId: String, relationship: Relationship, requestId: String?) {
+                selectedUserId = userId
+                selectedRelationship = relationship
+                selectedRequestId = requestId
+            }
 
             val currentUser: AuthUser? by mainViewModel.currentUser.collectAsState()
 
@@ -166,7 +180,9 @@ class MainActivity : ComponentActivity() {
                                     userProfileViewModel.reset()
                                     selectedUserId = null
                                     selectedRelationship = null
-
+                                    selectedRequestId = null
+                                    showFriends = false
+                                    friendsViewModel.reset()
                                 }
                             }
                             if (deepLink is AuthDeepLink.VerifyEmail) {
@@ -283,7 +299,8 @@ class MainActivity : ComponentActivity() {
                                     LaunchedEffect(userId) {
                                         userProfileViewModel.load(
                                             userId,
-                                            selectedRelationship ?: Relationship.NONE
+                                            selectedRelationship ?: Relationship.NONE,
+                                            selectedRequestId,
                                         )
                                     }
                                     BackHandler { selectedUserId = null }
@@ -292,21 +309,51 @@ class MainActivity : ComponentActivity() {
                                         onRetryClick = {
                                             userProfileViewModel.load(
                                                 userId,
-                                                selectedRelationship ?: Relationship.NONE
+                                                selectedRelationship ?: Relationship.NONE,
+                                                selectedRequestId,
                                             )
                                         },
                                         onBackClick = { selectedUserId = null },
+                                        onAddClick = { userProfileViewModel.sendRequest() },
+                                        onAcceptClick = { userProfileViewModel.acceptRequest() },
+                                        onDeclineClick = { userProfileViewModel.deleteRequest() },
+                                        onCancelClick = { userProfileViewModel.deleteRequest() },
+                                        onRemoveClick = { userProfileViewModel.removeFriend() },
+                                        modifier = Modifier.padding(innerPadding),
+                                    )
+                                } else if (showFriends) {
+                                    // Relancé à chaque arrivée sur l'écran (y compris au retour d'un profil)
+                                    LaunchedEffect(Unit) { friendsViewModel.load() }
+                                    BackHandler { showFriends = false }
+                                    FriendsScreen(
+                                        state = friendsViewModel.state,
+                                        onTabSelected = { friendsViewModel.onTabSelected(it) },
+                                        onRefreshClick = { friendsViewModel.load() },
+                                        onFriendClick = { f: Friend ->
+                                            openUserProfile(f.user.id, Relationship.FRIEND, null)
+                                        },
+                                        onRemoveFriendClick = { f: Friend -> friendsViewModel.removeFriend(f.user.id) },
+                                        onReceivedRequestClick = { r: FriendRequest ->
+                                            openUserProfile(r.user.id, Relationship.REQUEST_RECEIVED, r.id)
+                                        },
+                                        onSentRequestClick = { r: FriendRequest ->
+                                            openUserProfile(r.user.id, Relationship.REQUEST_SENT, r.id)
+                                        },
+                                        onAcceptClick = { r: FriendRequest -> friendsViewModel.acceptRequest(r.id) },
+                                        onDeclineClick = { r: FriendRequest -> friendsViewModel.deleteRequest(r.id) },
+                                        onCancelClick = { r: FriendRequest -> friendsViewModel.deleteRequest(r.id) },
+                                        onBackClick = { showFriends = false },
                                         modifier = Modifier.padding(innerPadding),
                                     )
                                 } else if (showUserSearch) {
+                                    LaunchedEffect(Unit) { userSearchViewModel.refresh() }
                                     BackHandler { showUserSearch = false }
                                     UserSearchScreen(
                                         state = userSearchViewModel.state,
                                         onQueryChange = { userSearchViewModel.onQueryChange(it) },
                                         onSearchClick = { userSearchViewModel.search() },
                                         onUserClick = { user ->
-                                            selectedUserId = user.id
-                                            selectedRelationship = user.relationship
+                                            openUserProfile(user.id, user.relationship, user.requestId)
                                         },
                                         onBackClick = { showUserSearch = false },
                                         modifier = Modifier.padding(innerPadding),
@@ -348,6 +395,7 @@ class MainActivity : ComponentActivity() {
                                         onLinkedAccountsClick = { showLinkedAccounts = true },
                                         onProfileClick = { showProfile = true },
                                         onUserSearchClick = { showUserSearch = true },
+                                        onFriendsClick = { showFriends = true },
                                         modifier = Modifier.padding(innerPadding),
                                     )
                                 }

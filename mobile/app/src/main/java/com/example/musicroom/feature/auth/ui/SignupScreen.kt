@@ -57,7 +57,7 @@ fun SignupScreen(
             color = MaterialTheme.colorScheme.primary,
         )
         Text(
-            text = "Crée ton compte pour commencer",
+            text = "Créer un compte pour commencer",
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
