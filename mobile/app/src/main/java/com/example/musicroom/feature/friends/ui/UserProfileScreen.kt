@@ -10,7 +10,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -20,6 +19,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.musicroom.core.ui.ErrorBanner
 import com.example.musicroom.core.ui.PrimaryButton
+import com.example.musicroom.core.ui.ScreenHeader
 import com.example.musicroom.core.ui.UserAvatar
 import com.example.musicroom.feature.auth.data.AuthError
 import com.example.musicroom.feature.auth.ui.toMessage
@@ -45,6 +45,8 @@ fun UserProfileScreen(
             .padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
+        ScreenHeader(title = null, onBackClick = onBackClick)
+
         when (state) {
             UserProfileState.Loading -> {
                 CircularProgressIndicator(
@@ -106,9 +108,6 @@ fun UserProfileScreen(
             }
         }
 
-        TextButton(onClick = onBackClick) {
-            Text("Retour")
-        }
     }
 }
 

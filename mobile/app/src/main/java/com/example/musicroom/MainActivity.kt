@@ -48,8 +48,10 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.safeDrawing
+import com.example.musicroom.core.ui.Snowfall
 import com.example.musicroom.feature.friends.data.Relationship
 import com.example.musicroom.feature.friends.ui.UserProfileScreen
 import com.example.musicroom.feature.friends.ui.UserProfileViewModel
@@ -135,279 +137,301 @@ class MainActivity : ComponentActivity() {
             }
             MusicroomTheme {
                 LocalNetworkPermissionGate {
-                    Scaffold(
+                    Box(
                         modifier = Modifier
                             .fillMaxSize()
                             .gradientBackground(),
-                        containerColor = Color.Transparent,
-                        contentWindowInsets = WindowInsets.safeDrawing,
-                    ) { innerPadding ->
-                        val deepLink: AuthDeepLink? = mainViewModel.pendingDeepLink
-                        val user: AuthUser? = currentUser
-                        val email: String? =
-                            signupViewModel.registeredEmail ?: loginViewModel.notVerifiedEmail
-                        LaunchedEffect(user) {
-                            if (user == null) {
-                                showLinkedAccounts = false
-                                linkedAccountsViewModel.reset()
-                                showProfile = false
-                                profileViewModel.reset()
-                                showEditProfile = false
-                                editProfileViewModel.reset()
-                                showUserSearch = false
-                                userSearchViewModel.reset()
-                                userProfileViewModel.reset()
-                                selectedUserId = null
-                                selectedRelationship = null
-
-                            }
-                        }
-                        if (deepLink is AuthDeepLink.VerifyEmail) {
-                            // Lance la vérification une seule fois pour ce lien, pas à chaque recomposition
-                            LaunchedEffect(deepLink) {
-                                confirmEmailViewModel.verifyEmail(deepLink.tokenHash)
-                            }
-                            ConfirmEmailScreen(
-                                state = confirmEmailViewModel.state,
-                                onDoneClick = {
-                                    signupViewModel.backToLogin()
-                                    loginViewModel.backToLogin()
-                                    mainViewModel.consumeDeepLink()
-                                    showSignup = false
-                                    verifyEmailViewModel.reset()
-                                    confirmEmailViewModel.reset()
-                                },
-                                modifier = Modifier.padding(innerPadding),
-                            )
-                        } else if (deepLink is AuthDeepLink.ResetPassword) {
-                            ResetPasswordScreen(
-                                password = resetPasswordViewModel.password,
-                                confirmPassword = resetPasswordViewModel.confirmPassword,
-                                state = resetPasswordViewModel.state,
-                                onPasswordChange = { p: String ->
-                                    resetPasswordViewModel.onPasswordChange(
-                                        p
-                                    )
-                                },
-                                onConfirmPasswordChange = { p: String ->
-                                    resetPasswordViewModel.onConfirmPasswordChange(
-                                        p
-                                    )
-                                },
-                                // Le token vient du lien : MainActivity le connaît, l'écran n'a pas besoin de le voir
-                                onSubmitClick = { resetPasswordViewModel.submit(deepLink.tokenHash) },
-                                onGoToLoginClick = {
-                                    mainViewModel.consumeDeepLink()
-                                    resetPasswordViewModel.reset()
-                                    showSignup = false
-                                    showForgotPassword = false
-                                },
-                                onRequestNewLinkClick = {
-                                    mainViewModel.consumeDeepLink()
-                                    resetPasswordViewModel.reset()
-                                    showSignup = false
-                                    showForgotPassword = true
-                                },
-                                modifier = Modifier.padding(innerPadding),
-                            )
-                        } else if (user != null) {
-                            //S'exec a l'arrivée sur homescren. relancé uniquement si la clef (user) change (donc si l'utilisateur change)
+                    ) {
+                        Snowfall()
+                        Scaffold(
+                            modifier = Modifier
+                                .fillMaxSize(),
+                            containerColor = Color.Transparent,
+                            contentWindowInsets = WindowInsets.safeDrawing,
+                        ) { innerPadding ->
+                            val deepLink: AuthDeepLink? = mainViewModel.pendingDeepLink
+                            val user: AuthUser? = currentUser
+                            val email: String? =
+                                signupViewModel.registeredEmail ?: loginViewModel.notVerifiedEmail
                             LaunchedEffect(user) {
-                                showSignup = false
-                            }
-                            if (showLinkedAccounts) {
-                                LaunchedEffect(Unit) {
-                                    linkedAccountsViewModel.load()
-                                }
-                                BackHandler {
+                                if (user == null) {
                                     showLinkedAccounts = false
+                                    linkedAccountsViewModel.reset()
+                                    showProfile = false
+                                    profileViewModel.reset()
+                                    showEditProfile = false
+                                    editProfileViewModel.reset()
+                                    showUserSearch = false
+                                    userSearchViewModel.reset()
+                                    userProfileViewModel.reset()
+                                    selectedUserId = null
+                                    selectedRelationship = null
+
                                 }
-                                LinkedAccountsScreen(
-                                    state = linkedAccountsViewModel.state,
-                                    onRetryClick = { linkedAccountsViewModel.load() },
-                                    onLinkGoogleClick = {
-                                        lifecycleScope.launch {
-                                            val res: GoogleCredentialResult =
-                                                googleCredentialProvider.requestIdToken(this@MainActivity)
-                                            linkedAccountsViewModel.linkGoogle(res)
-                                        }
+                            }
+                            if (deepLink is AuthDeepLink.VerifyEmail) {
+                                // Lance la vérification une seule fois pour ce lien, pas à chaque recomposition
+                                LaunchedEffect(deepLink) {
+                                    confirmEmailViewModel.verifyEmail(deepLink.tokenHash)
+                                }
+                                ConfirmEmailScreen(
+                                    state = confirmEmailViewModel.state,
+                                    onDoneClick = {
+                                        signupViewModel.backToLogin()
+                                        loginViewModel.backToLogin()
+                                        mainViewModel.consumeDeepLink()
+                                        showSignup = false
+                                        verifyEmailViewModel.reset()
+                                        confirmEmailViewModel.reset()
                                     },
-                                    onUnlinkGoogleClick = { linkedAccountsViewModel.unlinkGoogle() },
-                                    onBackClick = { showLinkedAccounts = false },
-                                    modifier = Modifier.padding(innerPadding)
-                                )
-                            } else if (showEditProfile) {
-                                val editState: EditProfileState = editProfileViewModel.state
-
-                                LaunchedEffect(editState.saved) {
-                                    if (editState.saved) {
-                                        showEditProfile = false
-                                        editProfileViewModel.reset()
-                                        profileViewModel.load()
-                                    }
-                                }
-                                BackHandler { showEditProfile = false }
-
-                                EditProfileScreen(
-                                    state = editState,
-                                    onUsernameChange = { editProfileViewModel.onUsernameChange(it) },
-                                    onBioChange = { editProfileViewModel.onBioChange(it) },
-                                    onGenreToggle = { editProfileViewModel.onGenreToggle(it) },
-                                    onFullNameChange = { editProfileViewModel.onFullNameChange(it) },
-                                    onBirthDateChange = { editProfileViewModel.onBirthDateChange(it) },
-                                    onSaveClick = { editProfileViewModel.save() },
-                                    onCancelClick = { showEditProfile = false },
                                     modifier = Modifier.padding(innerPadding),
                                 )
-                            } else if (selectedUserId != null) {
-                                val userId: String = selectedUserId!!
-                                LaunchedEffect(userId) {
-                                    userProfileViewModel.load(
-                                        userId,
-                                        selectedRelationship ?: Relationship.NONE
-                                    )
+                            } else if (deepLink is AuthDeepLink.ResetPassword) {
+                                ResetPasswordScreen(
+                                    password = resetPasswordViewModel.password,
+                                    confirmPassword = resetPasswordViewModel.confirmPassword,
+                                    state = resetPasswordViewModel.state,
+                                    onPasswordChange = { p: String ->
+                                        resetPasswordViewModel.onPasswordChange(
+                                            p
+                                        )
+                                    },
+                                    onConfirmPasswordChange = { p: String ->
+                                        resetPasswordViewModel.onConfirmPasswordChange(
+                                            p
+                                        )
+                                    },
+                                    // Le token vient du lien : MainActivity le connaît, l'écran n'a pas besoin de le voir
+                                    onSubmitClick = { resetPasswordViewModel.submit(deepLink.tokenHash) },
+                                    onGoToLoginClick = {
+                                        mainViewModel.consumeDeepLink()
+                                        resetPasswordViewModel.reset()
+                                        showSignup = false
+                                        showForgotPassword = false
+                                    },
+                                    onRequestNewLinkClick = {
+                                        mainViewModel.consumeDeepLink()
+                                        resetPasswordViewModel.reset()
+                                        showSignup = false
+                                        showForgotPassword = true
+                                    },
+                                    modifier = Modifier.padding(innerPadding),
+                                )
+                            } else if (user != null) {
+                                //S'exec a l'arrivée sur homescren. relancé uniquement si la clef (user) change (donc si l'utilisateur change)
+                                LaunchedEffect(user) {
+                                    showSignup = false
                                 }
-                                BackHandler { selectedUserId = null }
-                                UserProfileScreen(
-                                    state = userProfileViewModel.state,
-                                    onRetryClick = {
+                                if (showLinkedAccounts) {
+                                    LaunchedEffect(Unit) {
+                                        linkedAccountsViewModel.load()
+                                    }
+                                    BackHandler {
+                                        showLinkedAccounts = false
+                                    }
+                                    LinkedAccountsScreen(
+                                        state = linkedAccountsViewModel.state,
+                                        onRetryClick = { linkedAccountsViewModel.load() },
+                                        onLinkGoogleClick = {
+                                            lifecycleScope.launch {
+                                                val res: GoogleCredentialResult =
+                                                    googleCredentialProvider.requestIdToken(this@MainActivity)
+                                                linkedAccountsViewModel.linkGoogle(res)
+                                            }
+                                        },
+                                        onUnlinkGoogleClick = { linkedAccountsViewModel.unlinkGoogle() },
+                                        onBackClick = { showLinkedAccounts = false },
+                                        modifier = Modifier.padding(innerPadding)
+                                    )
+                                } else if (showEditProfile) {
+                                    val editState: EditProfileState = editProfileViewModel.state
+
+                                    LaunchedEffect(editState.saved) {
+                                        if (editState.saved) {
+                                            showEditProfile = false
+                                            editProfileViewModel.reset()
+                                            profileViewModel.load()
+                                        }
+                                    }
+                                    BackHandler { showEditProfile = false }
+
+                                    EditProfileScreen(
+                                        state = editState,
+                                        onUsernameChange = {
+                                            editProfileViewModel.onUsernameChange(
+                                                it
+                                            )
+                                        },
+                                        onBioChange = { editProfileViewModel.onBioChange(it) },
+                                        onGenreToggle = { editProfileViewModel.onGenreToggle(it) },
+                                        onFullNameChange = {
+                                            editProfileViewModel.onFullNameChange(
+                                                it
+                                            )
+                                        },
+                                        onBirthDateChange = {
+                                            editProfileViewModel.onBirthDateChange(
+                                                it
+                                            )
+                                        },
+                                        onSaveClick = { editProfileViewModel.save() },
+                                        onCancelClick = { showEditProfile = false },
+                                        modifier = Modifier.padding(innerPadding),
+                                    )
+                                } else if (selectedUserId != null) {
+                                    val userId: String = selectedUserId!!
+                                    LaunchedEffect(userId) {
                                         userProfileViewModel.load(
                                             userId,
                                             selectedRelationship ?: Relationship.NONE
                                         )
-                                    },
-                                    onBackClick = { selectedUserId = null },
-                                    modifier = Modifier.padding(innerPadding),
-                                )
-                            } else if (showUserSearch) {
-                                BackHandler { showUserSearch = false }
-                                UserSearchScreen(
-                                    state = userSearchViewModel.state,
-                                    onQueryChange = { userSearchViewModel.onQueryChange(it) },
-                                    onSearchClick = { userSearchViewModel.search() },
-                                    onUserClick = { user ->
-                                        selectedUserId = user.id
-                                        selectedRelationship = user.relationship
-                                    },
-                                    onBackClick = { showUserSearch = false },
-                                    modifier = Modifier.padding(innerPadding),
-                                )
-                            } else if (showProfile) {
-                                LaunchedEffect(Unit) {
-                                    profileViewModel.load()
-                                }
-                                BackHandler {
-                                    showProfile = false
-                                }
-                                ProfileScreen(
-                                    state = profileViewModel.state,
-                                    onRetryClick = { profileViewModel.load() },
-                                    onEditClick = {
-                                        val current = profileViewModel.state
-                                        if (current is ProfileState.Loaded) {
-                                            editProfileViewModel.start(current.profile)
-                                            showEditProfile = true
-                                        }
-                                    },
-                                    onBackClick = { showProfile = false },
-                                    onChangeAvatarClick = {
-                                        pickAvatar.launch(
-                                            PickVisualMediaRequest(
-                                                ActivityResultContracts.PickVisualMedia.ImageOnly
+                                    }
+                                    BackHandler { selectedUserId = null }
+                                    UserProfileScreen(
+                                        state = userProfileViewModel.state,
+                                        onRetryClick = {
+                                            userProfileViewModel.load(
+                                                userId,
+                                                selectedRelationship ?: Relationship.NONE
                                             )
+                                        },
+                                        onBackClick = { selectedUserId = null },
+                                        modifier = Modifier.padding(innerPadding),
+                                    )
+                                } else if (showUserSearch) {
+                                    BackHandler { showUserSearch = false }
+                                    UserSearchScreen(
+                                        state = userSearchViewModel.state,
+                                        onQueryChange = { userSearchViewModel.onQueryChange(it) },
+                                        onSearchClick = { userSearchViewModel.search() },
+                                        onUserClick = { user ->
+                                            selectedUserId = user.id
+                                            selectedRelationship = user.relationship
+                                        },
+                                        onBackClick = { showUserSearch = false },
+                                        modifier = Modifier.padding(innerPadding),
+                                    )
+                                } else if (showProfile) {
+                                    LaunchedEffect(Unit) {
+                                        profileViewModel.load()
+                                    }
+                                    BackHandler {
+                                        showProfile = false
+                                    }
+                                    ProfileScreen(
+                                        state = profileViewModel.state,
+                                        onRetryClick = { profileViewModel.load() },
+                                        onEditClick = {
+                                            val current = profileViewModel.state
+                                            if (current is ProfileState.Loaded) {
+                                                editProfileViewModel.start(current.profile)
+                                                showEditProfile = true
+                                            }
+                                        },
+                                        onBackClick = { showProfile = false },
+                                        onChangeAvatarClick = {
+                                            pickAvatar.launch(
+                                                PickVisualMediaRequest(
+                                                    ActivityResultContracts.PickVisualMedia.ImageOnly
+                                                )
+                                            )
+                                        },
+                                        onDeleteAvatarClick = { profileViewModel.deleteAvatar() },
+                                        modifier = Modifier.padding(innerPadding)
+                                    )
+                                } else {
+                                    HomeScreen(
+                                        user = user,
+                                        onLogoutClick = {
+                                            mainViewModel.logout()
+                                        },
+                                        onLinkedAccountsClick = { showLinkedAccounts = true },
+                                        onProfileClick = { showProfile = true },
+                                        onUserSearchClick = { showUserSearch = true },
+                                        modifier = Modifier.padding(innerPadding),
+                                    )
+                                }
+                            } else if (email != null) {
+                                VerifyEmailScreen(
+                                    email = email,
+                                    state = verifyEmailViewModel.state,
+                                    onResendClick = { e: String ->
+                                        verifyEmailViewModel.resendEmail(
+                                            e
                                         )
                                     },
-                                    onDeleteAvatarClick = { profileViewModel.deleteAvatar() },
+                                    onGoToLoginClick = {
+                                        signupViewModel.backToLogin()
+                                        loginViewModel.backToLogin()
+                                        showSignup = false
+                                        verifyEmailViewModel.reset()
+                                    },
+                                    modifier = Modifier.padding(innerPadding),
+                                )
+
+                            } else if (showSignup) {
+                                SignupScreen(
+                                    state = signupViewModel.state,
+                                    onSignupClick = { e: String, p: String, u: String ->
+                                        signupViewModel.signup(
+                                            e,
+                                            p,
+                                            u
+                                        )
+                                    },
+                                    onGoToLoginClick = { showSignup = false },
+                                    onGoogleClick = {
+                                        lifecycleScope.launch {
+                                            val result: GoogleCredentialResult =
+                                                googleCredentialProvider.requestIdToken(this@MainActivity)
+                                            signupViewModel.signInWithGoogle(result)
+                                        }
+                                    },
+                                    modifier = Modifier.padding(innerPadding),
+                                )
+                            } else if (showForgotPassword) {
+                                ForgotPasswordScreen(
+                                    email = forgotPasswordViewModel.email,
+                                    state = forgotPasswordViewModel.state,
+                                    onEmailChange = { e: String ->
+                                        forgotPasswordViewModel.onEmailChange(
+                                            e
+                                        )
+                                    },
+                                    onSendClick = { forgotPasswordViewModel.sendResetEmail() },
+                                    onGoToLoginClick = {
+                                        showForgotPassword = false
+                                        forgotPasswordViewModel.reset()
+                                    },
                                     modifier = Modifier.padding(innerPadding)
                                 )
                             } else {
-                                HomeScreen(
-                                    user = user,
-                                    onLogoutClick = {
-                                        mainViewModel.logout()
+                                LoginScreen(
+                                    state = loginViewModel.state,
+                                    onGoToForgotPasswordClick = { showForgotPassword = true },
+                                    onLoginClick = { e: String, p: String ->
+                                        loginViewModel.login(
+                                            e,
+                                            p
+                                        )
                                     },
-                                    onLinkedAccountsClick = { showLinkedAccounts = true },
-                                    onProfileClick = { showProfile = true },
-                                    onUserSearchClick = { showUserSearch= true },
+                                    onGoToSignupClick = { showSignup = true },
+                                    onGoogleClick = {
+                                        lifecycleScope.launch {
+                                            val result: GoogleCredentialResult =
+                                                googleCredentialProvider.requestIdToken(this@MainActivity)
+                                            loginViewModel.signInWithGoogle(result)
+                                        }
+                                    },
                                     modifier = Modifier.padding(innerPadding),
                                 )
                             }
-                        } else if (email != null) {
-                            VerifyEmailScreen(
-                                email = email,
-                                state = verifyEmailViewModel.state,
-                                onResendClick = { e: String -> verifyEmailViewModel.resendEmail(e) },
-                                onGoToLoginClick = {
-                                    signupViewModel.backToLogin()
-                                    loginViewModel.backToLogin()
-                                    showSignup = false
-                                    verifyEmailViewModel.reset()
-                                },
-                                modifier = Modifier.padding(innerPadding),
-                            )
-
-                        } else if (showSignup) {
-                            SignupScreen(
-                                state = signupViewModel.state,
-                                onSignupClick = { e: String, p: String, u: String ->
-                                    signupViewModel.signup(
-                                        e,
-                                        p,
-                                        u
-                                    )
-                                },
-                                onGoToLoginClick = { showSignup = false },
-                                onGoogleClick = {
-                                    lifecycleScope.launch {
-                                        val result: GoogleCredentialResult =
-                                            googleCredentialProvider.requestIdToken(this@MainActivity)
-                                        signupViewModel.signInWithGoogle(result)
-                                    }
-                                },
-                                modifier = Modifier.padding(innerPadding),
-                            )
-                        } else if (showForgotPassword) {
-                            ForgotPasswordScreen(
-                                email = forgotPasswordViewModel.email,
-                                state = forgotPasswordViewModel.state,
-                                onEmailChange = { e: String ->
-                                    forgotPasswordViewModel.onEmailChange(
-                                        e
-                                    )
-                                },
-                                onSendClick = { forgotPasswordViewModel.sendResetEmail() },
-                                onGoToLoginClick = {
-                                    showForgotPassword = false
-                                    forgotPasswordViewModel.reset()
-                                },
-                                modifier = Modifier.padding(innerPadding)
-                            )
-                        } else {
-                            LoginScreen(
-                                state = loginViewModel.state,
-                                onGoToForgotPasswordClick = { showForgotPassword = true },
-                                onLoginClick = { e: String, p: String ->
-                                    loginViewModel.login(
-                                        e,
-                                        p
-                                    )
-                                },
-                                onGoToSignupClick = { showSignup = true },
-                                onGoogleClick = {
-                                    lifecycleScope.launch {
-                                        val result: GoogleCredentialResult =
-                                            googleCredentialProvider.requestIdToken(this@MainActivity)
-                                        loginViewModel.signInWithGoogle(result)
-                                    }
-                                },
-                                modifier = Modifier.padding(innerPadding),
-                            )
-                        }
 //                        HealthScreen(
 //                            state = healthViewModel.state,
 //                            onRetryClick = { healthViewModel.checkHealth()},
 //                            modifier = Modifier.padding(innerPadding),
 //                        )
+                        }
                     }
                 }
             }

@@ -12,7 +12,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import com.example.musicroom.core.ui.AppTextField
 import com.example.musicroom.core.ui.ErrorBanner
 import com.example.musicroom.core.ui.PrimaryButton
+import com.example.musicroom.core.ui.ScreenHeader
 import com.example.musicroom.core.ui.UserAvatar
 import com.example.musicroom.feature.auth.data.AuthError
 import com.example.musicroom.feature.auth.ui.toMessage
@@ -46,11 +46,7 @@ fun UserSearchScreen(
             .padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Text(
-            text = "Rechercher des utilisateurs",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-        )
+        ScreenHeader(title = "Rechercher des utilisateurs", onBackClick = onBackClick)
 
         AppTextField(
             value = state.query,
@@ -89,9 +85,6 @@ fun UserSearchScreen(
             }
         }
 
-        TextButton(onClick = onBackClick) {
-            Text("Retour")
-        }
     }
 }
 

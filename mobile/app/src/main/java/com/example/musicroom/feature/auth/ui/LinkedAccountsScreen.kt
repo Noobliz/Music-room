@@ -12,7 +12,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -21,6 +20,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.musicroom.core.ui.ErrorBanner
 import com.example.musicroom.core.ui.PrimaryButton
+import com.example.musicroom.core.ui.ScreenHeader
 import com.example.musicroom.feature.auth.data.AuthError
 import com.example.musicroom.feature.auth.data.Identity
 import com.example.musicroom.ui.theme.MusicroomTheme
@@ -42,11 +42,7 @@ fun LinkedAccountsScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
 
-        Text(
-            text = "Comptes liés",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-        )
+        ScreenHeader(title = "Comptes liés", onBackClick = onBackClick)
 
         when (state) {
             LinkedAccountsState.Loading -> {
@@ -112,9 +108,6 @@ fun LinkedAccountsScreen(
             }
         }
 
-        TextButton(onClick = onBackClick) {
-            Text("Retour")
-        }
     }
 }
 

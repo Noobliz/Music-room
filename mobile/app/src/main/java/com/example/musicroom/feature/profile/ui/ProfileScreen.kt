@@ -21,6 +21,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.musicroom.core.ui.ErrorBanner
 import com.example.musicroom.core.ui.PrimaryButton
+import com.example.musicroom.core.ui.ScreenHeader
 import com.example.musicroom.core.ui.UserAvatar
 import com.example.musicroom.feature.auth.data.AuthError
 import com.example.musicroom.feature.auth.ui.toMessage
@@ -45,11 +46,7 @@ fun ProfileScreen(
             .padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Text(
-            text = "Mon profil",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-        )
+        ScreenHeader(title = "Mon profil", onBackClick = onBackClick)
 
         when (state) {
             ProfileState.Loading -> {
@@ -118,9 +115,6 @@ fun ProfileScreen(
             }
         }
 
-        TextButton(onClick = onBackClick) {
-            Text("Retour")
-        }
     }
 }
 

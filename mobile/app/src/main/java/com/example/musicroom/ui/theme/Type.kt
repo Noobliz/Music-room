@@ -5,7 +5,15 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.font.Font
+import com.example.musicroom.R
 
+
+val WinterTitle: FontFamily = FontFamily(
+    Font(R.font.comfortaa_semibold, FontWeight.SemiBold),
+    Font(R.font.comfortaa_bold, FontWeight.Bold),
+)
+private val Base = androidx.compose.material3.Typography()
 // Set of Material typography styles to start with
 val Typography = Typography(
     bodyLarge = TextStyle(
@@ -14,7 +22,12 @@ val Typography = Typography(
         fontSize = 16.sp,
         lineHeight = 24.sp,
         letterSpacing = 0.5.sp
-    )
+    ),
+    displaySmall = Base.displaySmall.copy(fontFamily = WinterTitle),
+    headlineMedium = Base.headlineMedium.copy(fontFamily = WinterTitle),
+    titleLarge = Base.titleLarge.copy(fontFamily = WinterTitle),
+    titleMedium = Base.titleMedium.copy(fontFamily = WinterTitle),
+
     /* Other default text styles to override
     titleLarge = TextStyle(
         fontFamily = FontFamily.Default,
@@ -32,3 +45,8 @@ val Typography = Typography(
     )
     */
 )
+
+
+
+
+
