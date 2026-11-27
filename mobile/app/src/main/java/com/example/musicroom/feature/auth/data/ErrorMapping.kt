@@ -13,5 +13,8 @@ fun ErrorBody.toAuthError(httpCode: Int): AuthError =
         "LAST_IDENTITY" -> AuthError.LastIdentity
         "IDENTITY_NOT_FOUND" -> AuthError.IdentityNotFound
         "IDENTITY_NOT_DELETABLE" -> AuthError.IdentityNotDeletable
+        "PROFILE_NOT_FOUND" -> AuthError.ProfileNotFound
+        "PAYLOAD_TOO_LARGE" -> AuthError.PayloadTooLarge
+        "UNSUPPORTED_MEDIA_TYPE" -> AuthError.UnsupportedMediaType
         else -> AuthError.Unknown(httpCode)
     }

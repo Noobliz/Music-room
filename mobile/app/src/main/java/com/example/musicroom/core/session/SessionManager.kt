@@ -15,6 +15,10 @@ class SessionManager(
     )
     val currentUser: StateFlow<AuthUser?> = _currentUser.asStateFlow()
 
+    fun updateUser(user: AuthUser) {
+        storage.saveUser(user)
+        _currentUser.value = user
+    }
     fun accessToken(): String?
         = storage.read()?.accessToken
 

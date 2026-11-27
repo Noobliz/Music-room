@@ -26,4 +26,10 @@ sealed interface AuthError {
 
     data object NoGoogleAccount : AuthError
 
+    data object ProfileNotFound : AuthError
+
+    data object PayloadTooLarge: AuthError
+
+    data object UnsupportedMediaType: AuthError
+
 }
